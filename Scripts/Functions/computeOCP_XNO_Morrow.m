@@ -7,6 +7,9 @@ function [OCP, dUdT] = computeOCP_XNO_Morrow(c, T, cmax)
     theta = c./cmax;
 
 
+    theta = c./cmax;
+
+
     refOCP_table = [[0.000000, 2.27110];...
                     [0.010042, 2.03180];...
                     [0.020083, 1.97010];...
