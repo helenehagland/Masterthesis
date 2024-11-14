@@ -4,22 +4,7 @@ function [OCP, dUdT] = computeOCP_XNO_Morrow(c, T, cmax)
 
     Tref = 293.15;  % [K]
 
-    % if isa(c, 'ADI')
-    %     c_values = c.val;  % Extract the actual numeric values
-    % else
-    %     c_values = c;  % Use c directly if it's not an ADI object
-    % end
-
-
     theta = c./cmax;
-
-    % % Diagnostic print
-    % disp('First few values of c:');
-    % disp(c_values(1:5));
-
-    % if any(~isreal(c_values)) || any(isnan(c_values))
-    % error('c contains complex or NaN values.');
-    % end
 
 
     refOCP_table = [[0.000000, 2.27110];...
