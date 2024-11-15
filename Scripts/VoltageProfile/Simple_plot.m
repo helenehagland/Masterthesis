@@ -1,4 +1,4 @@
-jsonstruct = parseBattmoJson('Matlab/Parameter_Files/SampleInput_LNMO.json');
+jsonstruct = parseBattmoJson('Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
 %jsonstruct = parseBattmoJson('Documents/MATLAB/Software/BattMo/Examples/JsonDataFiles/sample_input.json');
 
 
@@ -20,6 +20,11 @@ capacity = time .* current;
 % Plot the model discharge curve
 plot((capacity / (3600 * 1e-3)), voltage, '-', 'LineWidth', 3, 'MarkerSize', 5,'DisplayName', 'Model') % Convert to mA·h
 hold on
+
+for i = 1:numel(states)
+    disp(['State at timestep ', num2str(i), ':']);
+    disp(output.states{i});
+end
 
 
 plot_experimental = true;
