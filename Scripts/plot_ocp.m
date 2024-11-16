@@ -11,8 +11,11 @@ ocp_cell = ocp_lnmo - ocp_xno;
 
 soc = c_lnmo ./ cmax_lnmo;
 
+
+figure()
 plot(soc,ocp_lnmo)
 hold on
 plot(soc,ocp_xno)
 hold on
 plot(soc,ocp_cell)
+hold off
