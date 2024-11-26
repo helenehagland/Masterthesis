@@ -1,91 +1,90 @@
-% Preallocate matrices for concentrations and potentials
-num_timesteps = numel(output.states); % Number of timesteps
-num_positions_ne = numel(output.states{end}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface);
-num_positions_pe = numel(output.states{end}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface);
-num_positions_electrolyte = numel(output.states{end}.Electrolyte.c);
+% Load input configuration
+jsonstruct = parseBattmoJson('Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
 
-% Extract electrolyte grid centroids
-x_electrolyte = output.model.grid.cells.centroids; % Actual positions for the electrolyte
+% Set control parameters
+jsonstruct.Control.CRate = 0.05;
+jsonstruct.Control.DRate = 0.05;
+jsonstruct.Control.lowerCutoffVoltage = 1;
+jsonstruct.Control.upperCutoffVoltage = 3.5;
+output = runBatteryJson(jsonstruct);
+states = output.states;
 
-% Preallocate matrices
-electrolyte_concentration = zeros(num_positions_electrolyte, num_timesteps);
-anode_concentration = zeros(num_positions_ne, num_timesteps);
-cathode_concentration = zeros(num_positions_pe, num_timesteps);
-electrolyte_potential = zeros(num_positions_electrolyte, num_timesteps);
-anode_potential = zeros(num_positions_ne, num_timesteps);
-cathode_potential = zeros(num_positions_pe, num_timesteps);
+% Extract simulation data
+time = cellfun(@(state) state.time / 3600, states); % Time in hours
+x_elyte = output.model.grid.cells.centroids; % Electrolyte grid centroids
 
-% Time vector
-time_vector = zeros(1, num_timesteps); % To store time values
+% Preallocate matrices for contour plots
+numSteps = length(states);
+c_ne = zeros(numel(states{end}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface), numSteps);
+c_pe = zeros(numel(states{end}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface), numSteps);
+c_elyte = zeros(numel(x_elyte), numSteps);
 
-% Fill the data matrices
-for i = 1:num_timesteps
-    electrolyte_concentration(:, i) = output.states{i}.Electrolyte.c;
-    anode_concentration(:, i) = output.states{i}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface;
-    cathode_concentration(:, i) = output.states{i}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface;
-    
-    electrolyte_potential(:, i) = output.states{i}.Electrolyte.phi;
-    anode_potential(:, i) = output.states{i}.NegativeElectrode.Coating.phi;
-    cathode_potential(:, i) = output.states{i}.PositiveElectrode.Coating.phi;
-    
-    time_vector(i) = output.states{i}.time / 3600; % Convert time to hours
+phi_ne = zeros(numel(states{end}.NegativeElectrode.Coating.phi), numSteps);
+phi_pe = zeros(numel(states{end}.PositiveElectrode.Coating.phi), numSteps);
+phi_elyte = zeros(numel(x_elyte), numSteps);
+
+% Populate the matrices
+for step = 1:numSteps
+    c_ne(:, step) = states{step}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface;
+    c_pe(:, step) = states{step}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface;
+    c_elyte(:, step) = states{step}.Electrolyte.c;
+
+    phi_ne(:, step) = states{step}.NegativeElectrode.Coating.phi;
+    phi_pe(:, step) = states{step}.PositiveElectrode.Coating.phi;
+    phi_elyte(:, step) = states{step}.Electrolyte.phi;
 end
 
-% Use index as the position for the anode and cathode since their grid points are not provided
-index_ne = 1:num_positions_ne;
-index_pe = 1:num_positions_pe;
-
-% Plot contour plots
-figure;
+% Create the contour plots
+figure; % Create a new figure
 colormap(sky);
 
-% 1. Anode Concentration
+% Negative Electrode Concentration
 subplot(2, 3, 1);
-contourf(index_ne, time_vector, anode_concentration', 20, 'LineColor', [0.5 0.5 0.5]);
+contourf(1:size(c_ne, 1), time, c_ne', 20, 'LineColor', 'none');
 colorbar;
 xlabel('Index');
-ylabel('Time / h');
-title('Anode Concentration / mol · L^{-1}');
+ylabel('Time (h)');
+title('Negative Electrode Concentration / mol·L^{-1}');
 
-% 2. Electrolyte Concentration
+% Electrolyte Concentration
 subplot(2, 3, 2);
-contourf(x_electrolyte * 1e6, time_vector, electrolyte_concentration', 20, 'LineColor', [0.5 0.5 0.5]);
+contourf(x_elyte, time, c_elyte', 20, 'LineColor', 'none');
 colorbar;
-xlabel('Position / µm');
-ylabel('Time / h');
-title('Electrolyte Concentration / mol · L^{-1}');
+xlabel('Position (m)');
+ylabel('Time (h)');
+title('Electrolyte Concentration / mol·L^{-1}');
 
-% 3. Cathode Concentration
+% Positive Electrode Concentration
 subplot(2, 3, 3);
-contourf(index_pe, time_vector, cathode_concentration', 20, 'LineColor', [0.5 0.5 0.5]);
+contourf(1:size(c_pe, 1), time, c_pe', 20, 'LineColor', 'none');
 colorbar;
 xlabel('Index');
-ylabel('Time / h');
-title('Cathode Concentration / mol · L^{-1}');
+ylabel('Time (h)');
+title('Positive Electrode Concentration / mol·L^{-1}');
 
-% 4. Anode Potential
+% Negative Electrode Potential
 subplot(2, 3, 4);
-contourf(index_ne, time_vector, anode_potential', 20, 'LineColor', [0.5 0.5 0.5]);
+contourf(1:size(phi_ne, 1), time, phi_ne', 20, 'LineColor', 'none');
 colorbar;
 xlabel('Index');
-ylabel('Time / h');
-title('Anode Potential / V');
+ylabel('Time (h)');
+title('Negative Electrode Potential / V');
 
-% 5. Electrolyte Potential
+% Electrolyte Potential
 subplot(2, 3, 5);
-contourf(x_electrolyte * 1e6, time_vector, electrolyte_potential', 20, 'LineColor', [0.5 0.5 0.5]); 
+contourf(x_elyte, time, phi_elyte', 20, 'LineColor', 'none');
 colorbar;
-xlabel('Position / µm');
-ylabel('Time / h');
+xlabel('Position (m)');
+ylabel('Time (h)');
 title('Electrolyte Potential / V');
 
-% 6. Cathode Potential
+% Positive Electrode Potential
 subplot(2, 3, 6);
-contourf(index_pe, time_vector, cathode_potential', 20, 'LineColor', [0.5 0.5 0.5]);
+contourf(1:size(phi_pe, 1), time, phi_pe', 20, 'LineColor', 'none');
 colorbar;
 xlabel('Index');
-ylabel('Time / h');
-title('Cathode Potential / V');
+ylabel('Time (h)');
+title('Positive Electrode Potential / V');
 
-% Adjust layout
-sgtitle('Concentration and Potential Contour Plots');
+% Add a main title
+sgtitle('Contour Plots of Concentrations and Potentials Over Time');
