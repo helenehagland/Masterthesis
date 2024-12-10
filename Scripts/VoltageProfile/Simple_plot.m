@@ -21,10 +21,10 @@ voltage = cellfun(@(state) state.Control.E, states);
 current = cellfun(@(state) state.Control.I, states);
 
 % Calculate the capacity from model data
-capacity = time .* -1 .* current;
+capacity = flip(time .* -1 .* current);
 
 % Plot the model discharge curve
-plot((flip(capacity) / (3600 * 1e-3)), voltage, '-', 'LineWidth', 3, 'MarkerSize', 5, 'DisplayName', 'Model');
+plot((capacity / (3600 * 1e-3)), voltage, '-', 'LineWidth', 3, 'MarkerSize', 5, 'DisplayName', 'Model');
 hold on;
 
 % Extract and plot full cell data
@@ -68,3 +68,4 @@ figure(2); % Create the second figure for the dashboard
 plotDashboard(output.model, states, 'step', length(states), 'theme', 'light', 'size', 'wide');
 
 disp(jsonstruct.Control);
+
