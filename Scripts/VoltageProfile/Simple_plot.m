@@ -32,7 +32,7 @@ file_path_fullcell = '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Projec
 experimental_data_fullcell = readtable(file_path_fullcell);
 exp_voltage_fullcell = experimental_data_fullcell.VoltageCby20;
 exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20;
-plot(exp_capacity_fullcell, exp_voltage_fullcell, '-', 'LineWidth', 2, 'MarkerSize', 2, 'DisplayName', 'Full cell');
+plot(exp_capacity_fullcell, exp_voltage_fullcell, '-', 'LineWidth', 2, 'MarkerSize', 2, 'DisplayName', 'Experimental');
 
 % Plot half-cell data (optional)
 plot_halfcells = false; % Set to true if you want to include half-cell data
@@ -57,15 +57,41 @@ if plot_halfcells
 end
 
 % Label the plot
-xlabel('Capacity / mA \cdot h');
-ylabel('Voltage / V');
-legend('Location', 'best');
+xlabel('Capacity / mA \cdot h', 'FontSize', 18, 'FontWeight', 'bold');
+ylabel('Voltage / V', 'FontSize', 18, 'FontWeight', 'bold');
+title('Discharge curve C/20', 'FontSize', 22);
+legend('Location', 'best', 'FontSize', 14);
 grid on;
+ax = gca; % Get current axes handle
+ax.FontSize = 14; % Set tick label font size
+ax.FontWeight = 'bold'; % Set tick label font weight
 hold off;
+hold off;
+
+% Save the first figure
+figureHandle1 = gcf; % Get the handle for figure 1
+set(figureHandle1, 'Units', 'normalized', 'OuterPosition', [0, 0, 1, 1]); % Full screen
+set(figureHandle1, 'PaperUnits', 'inches');
+set(figureHandle1, 'PaperSize', [16, 12]);
+set(figureHandle1, 'PaperPosition', [0, 0, 16, 12]);
+exportgraphics(figureHandle1, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/DischargePlot.pdf', ...
+    'ContentType', 'vector', 'Resolution', 300);
 
 % Plot dashboard
 figure(2); % Create the second figure for the dashboard
 plotDashboard(output.model, states, 'step', length(states), 'theme', 'light', 'size', 'wide');
 
+% Save the second figure
+figureHandle2 = gcf; % Get the handle for figure 2
+set(figureHandle2, 'Units', 'normalized', 'OuterPosition', [0, 0, 1, 1]); % Full screen
+set(figureHandle2, 'PaperUnits', 'inches');
+set(figureHandle2, 'PaperSize', [16, 12]);
+set(figureHandle2, 'PaperPosition', [0, 0, 16, 12]);
+exportgraphics(figureHandle2, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/StatePlot.pdf', ...
+    'ContentType', 'vector', 'Resolution', 300);
+
+
 disp(jsonstruct.Control);
+
+
 

@@ -48,29 +48,42 @@ soc_ocp = c_lnmo ./ cmax_lnmo; % SOC for OCP data
 % Plot the Data
 figure;
 % Plot OCP Data
-plot(soc_ocp, ocp_lnmo, '-', 'LineWidth', 2, 'DisplayName', 'OCP LNMO');
+plot(soc_ocp, ocp_lnmo, '-', 'LineWidth', 3, 'DisplayName', 'OCP LNMO');
 hold on;
-plot(soc_ocp, ocp_xno, '-', 'LineWidth', 2, 'DisplayName', 'OCP XNO');
-plot(soc_ocp, ocp_cell, '-', 'LineWidth', 2, 'DisplayName', 'Model');
+plot(soc_ocp, ocp_xno, '-', 'LineWidth', 3, 'DisplayName', 'OCP XNO');
+plot(soc_ocp, ocp_cell, '-', 'LineWidth', 3, 'DisplayName', 'Model');
 
 % Plot Full-Cell Experimental Data
-plot(soc_exp, exp_voltage_fullcell, '-', 'LineWidth', 2, 'DisplayName', 'Full cell (Normalized)');
+plot(soc_exp, exp_voltage_fullcell, '-', 'LineWidth', 3, 'DisplayName', 'Full cell (Normalized)');
 
 % Plot Half-Cell Experimental Data (if enabled)
 if plot_halfcells
-    plot(soc_exp_lnmo, exp_voltage_lnmo, 's-', 'LineWidth', 2, 'MarkerSize', 2, 'DisplayName', 'Experimental LNMO');
-    plot(soc_exp_xno, exp_voltage_xno, '^-', 'LineWidth', 2, 'MarkerSize', 2, 'DisplayName', 'Experimental XNO');
+    plot(soc_exp_lnmo, exp_voltage_lnmo, '-', 'LineWidth', 3, 'MarkerSize', 3, 'DisplayName', 'Experimental LNMO');
+    plot(soc_exp_xno, exp_voltage_xno, '-', 'LineWidth', 3, 'MarkerSize', 3, 'DisplayName', 'Experimental XNO');
 end
-
 % Customize the Plot
-xlabel('State of Charge (SOC)', 'FontSize', 12);
-ylabel('Voltage / V', 'FontSize', 12);
-title('OCP and Experimental Data', 'FontSize', 14);
+xlabel('State of Charge (SOC)', 'FontSize', 18, 'FontWeight', 'bold');
+ylabel('Voltage / V', 'FontSize', 18, 'FontWeight', 'bold');
+title('OCP of Model and Experimental Data', 'FontSize', 22, 'FontWeight', 'bold');
 grid on;
 
-% Adjust legend location to avoid overlap
-legend('Location', 'northeastoutside'); % Moves the legend outside the plot area
-xlim([0, 1]); % SOC range is always 0 to 1
-ylim([1, 5]); % Adjusted y-axis to include half-cell OCP
-set(gca, 'FontSize', 12);
+% Set x-axis ticks and labels to reverse from 1 to 0
+ax = gca; % Get current axis
+ax.XTick = linspace(0, 1, 11); % Define ticks at uniform intervals (0, 0.1, ..., 1.0)
+ax.XTickLabel = num2str(flip(ax.XTick(:))); % Reverse and set tick labels
+ax.FontSize = 14;
+ax.FontWeight = 'bold';
+
+legend('Location', 'best', 'FontSize', 14);
 hold off;
+
+% Set figure size for the output
+figureHandle = gcf; % Get current figure handle
+set(figureHandle, 'Units', 'normalized', 'OuterPosition', [0, 0, 1, 1]); % Full screen
+set(figureHandle, 'PaperUnits', 'inches');
+set(figureHandle, 'PaperSize', [16, 12]); % Set size to 16x12 inches
+set(figureHandle, 'PaperPosition', [0, 0, 16, 12]); % Fill the page
+
+% Save the plot as a PDF
+exportgraphics(figureHandle, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/OCP.pdf', ...
+    'ContentType', 'vector', 'Resolution', 300);
