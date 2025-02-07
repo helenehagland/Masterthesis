@@ -10,167 +10,103 @@ jsonstruct.Control.lowerCutoffVoltage = 0.5;
 jsonstruct.Control.upperCutoffVoltage = 4;
 jsonstruct.Control.initialControl = 'charging';
 
-% Create a vector of different reaction rate constants
-k = [1e-12, 1e-11, 1e-10];
+% Define the k0 values for negative and positive electrodes
+k_neg = [4.5e-11, 5.0e-11, 5.5e-11]; % Negative electrode reaction rate constants
+k_pos = [2.0e-11, 2.3e-11, 2.6e-11]; % Positive electrode reaction rate constants
 
-% Instantiate empty cell arrays to store outputs and states
-output = cell(size(k));
-states = cell(size(k)); % Cell array to store states for each k value
+% Initialize arrays for storing results
+time_values = {};
+j0_neg_values = {};
+j0_pos_values = {};
+legend_entries = {};
 
-% Run simulations for each reaction rate constant
-for i = 1:numel(k)
-    % Modify the value for the reaction rate constant
-    jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = k(i);
-    
-    % Run the simulation and store the results
-    output{i} = runBatteryJson(jsonstruct);
-    states{i} = output{i}.states;
-end
-
-% Plot voltage vs. capacity for all reaction rate constants
-figure(1);
+% Loop through k0 combinations for each electrode
+figure;
 hold on;
-legendEntries = {}; % Initialize legend entries
-for i = 1:numel(k)
-    % Extract the time, voltage, and current quantities
-    time = cellfun(@(state) state.time, states{i});
-    voltage = cellfun(@(state) state.('Control').E, states{i});
-    current = cellfun(@(state) state.('Control').I, states{i});
-    
-    % Calculate the capacity
-    capacity = flip(time .* -1 .* current);
-    
-    % Plot voltage vs. capacity
-    plot((capacity / (milli * hour)), voltage, '-', 'linewidth', 2);
-    legendEntries{end+1} = sprintf('k = %.0e', k(i));
+
+for i = 1:numel(k_neg)
+    for j = 1:numel(k_pos)
+        % Update the reaction rate constants in the input JSON
+        jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = k_neg(i);
+        jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = k_pos(j);
+
+        % Run the simulation
+        output = runBatteryJson(jsonstruct);
+        states = output.states;
+
+        % Initialize temporary storage for this run
+        time = [];
+        j0_neg = [];
+        j0_pos = [];
+
+        % Loop through all states to calculate j0
+        for k = 1:length(states)
+            % Extract necessary fields
+            if isfield(states{k}, 'NegativeElectrode') && ...
+               isfield(states{k}.NegativeElectrode, 'Coating') && ...
+               isfield(states{k}.PositiveElectrode, 'Coating') && ...
+               isfield(states{k}.Electrolyte, 'c') && ...
+               isfield(states{k}.ThermalModel, 'T') && ...
+               isfield(states{k}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion, 'cSurface') && ...
+               isfield(states{k}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion, 'cSurface')
+
+                T = states{k}.ThermalModel.T;
+                cNegElectrode = states{k}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface;
+                cNegElyte = states{k}.Electrolyte.c;
+                cPosElectrode = states{k}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface;
+                cPosElyte = states{k}.Electrolyte.c;
+
+                % Ensure scalar values
+                cNegElectrode = mean(cNegElectrode(:));
+                cNegElyte = mean(cNegElyte(:));
+                cPosElectrode = mean(cPosElectrode(:));
+                cPosElyte = mean(cPosElyte(:));
+                T = mean(T(:));
+
+                % Constants
+                F = 96485;
+                R = 8.314;
+
+                % Calculate reaction rate constants
+                k_neg_i = k_neg(i) * exp(-5000 / (R * (1 / T - 1 / 298.15)));
+                k_pos_j = k_pos(j) * exp(-5000 / (R * (1 / T - 1 / 298.15)));
+
+                % Calculate exchange current densities
+                coef_neg = cNegElyte * (35259 - cNegElectrode) * cNegElectrode; % saturation concentration for negative electrode
+                coef_pos = cPosElyte * (23279 - cPosElectrode) * cPosElectrode; % saturation concentration for positive electrode
+                j0_neg = [j0_neg; k_neg_i * sqrt(max(coef_neg, 0)) * F];
+                j0_pos = [j0_pos; k_pos_j * sqrt(max(coef_pos, 0)) * F];
+
+                % Time
+                time = [time; states{k}.time];
+            end
+        end
+
+        % Store results for plotting
+        time_values{end + 1} = time;
+        j0_neg_values{end + 1} = j0_neg;
+        j0_pos_values{end + 1} = j0_pos;
+
+        % Plot results
+        plot(time, j0_neg, '-', 'LineWidth', 2, 'DisplayName', sprintf('Neg., k=%.1e', k_neg(i)));
+        plot(time, j0_pos, '--', 'LineWidth', 2, 'DisplayName', sprintf('Pos., k=%.1e', k_pos(j)));
+        legend_entries{end + 1} = sprintf('Neg., k=%.1e', k_neg(i));
+        legend_entries{end + 1} = sprintf('Pos., k=%.1e', k_pos(j));
+    end
 end
-xlabel('Capacity / mA \cdot h', 'FontSize', 18, 'FontWeight', 'bold');
-ylabel('Voltage / V', 'FontSize', 18, 'FontWeight', 'bold');
-title('Voltage vs. Capacity for Different Reaction Rate Constants', 'FontSize', 22, 'FontWeight', 'bold');
-legend(legendEntries, 'Location', 'best', 'FontSize', 14); % Add custom legend entries
+
+% Customize plot
+xlabel('Time (s)', 'FontSize', 14, 'FontWeight', 'bold');
+ylabel('Exchange Current Density (j_0) [A/m²]', 'FontSize', 14, 'FontWeight', 'bold');
+title('Exchange Current Density for Negative and Positive Electrodes with Varied k_0', 'FontSize', 16);
+legend('Location', 'best', 'FontSize', 12);
 grid on;
-ax = gca; % Get current axis
-ax.FontSize = 14;
-ax.FontWeight = 'bold';
 hold off;
 
-% Save the Voltage vs. Capacity Plot
+% Save the plot
 set(gcf, 'Units', 'normalized', 'OuterPosition', [0, 0, 1, 1]); % Full screen
 set(gcf, 'PaperUnits', 'inches');
 set(gcf, 'PaperSize', [16, 12]);
 set(gcf, 'PaperPosition', [0, 0, 16, 12]);
-exportgraphics(gcf, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/ReactionRate_Discharge.pdf', ...
+exportgraphics(gcf, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/Exchange_Current_Density_Varied_k0.pdf', ...
     'ContentType', 'vector', 'Resolution', 300);
-
-% Plot dashboards for each reaction rate constant and save them
-for i = 1:numel(k)
-    figure(i + 1); % Create a new figure for each dashboard
-    sgtitle(sprintf('State plots for k = %.0e', k(i)), 'FontSize', 20, 'FontWeight', 'bold'); % Overall title
-
-    % Subplot 1: Negative Electrode Concentration
-    subplot(2, 3, 1);
-    try
-        grid = output{i}.model.NegativeElectrode.Coating.grid;
-        concentration = states{i}{end}.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface ./ 1000;
-        plotCellData(grid, concentration, 'linewidth', 2);
-    catch
-        warning('Error in Negative Electrode Concentration for k = %.0e', k(i));
-    end
-    xlabel('Position / m', 'FontSize', 18, 'FontWeight', 'bold');
-    title('Negative Electrode Concentration', 'FontSize', 12, 'FontWeight', 'bold');
-
-    ax = gca;
-    ax.FontSize = 12;
-    ax.FontWeight = 'bold';
-
-    % Subplot 2: Electrolyte Concentration
-    subplot(2, 3, 2);
-    try
-        grid = output{i}.model.Electrolyte.grid;
-        concentration = states{i}{end}.Electrolyte.c ./ 1000;
-        plotCellData(grid, concentration, 'linewidth', 2);
-    catch
-        warning('Error in Electrolyte Concentration for k = %.0e', k(i));
-    end
-    xlabel('Position / m', 'FontSize', 18, 'FontWeight', 'bold');
-    title('ELectrolyte Concentration', 'FontSize', 12, 'FontWeight', 'bold');
-
-    ax = gca;
-    ax.FontSize = 12;
-    ax.FontWeight = 'bold';
-
-    % Subplot 3: Positive Electrode Concentration
-    subplot(2, 3, 3);
-    try
-        grid = output{i}.model.PositiveElectrode.Coating.grid;
-        concentration = states{i}{end}.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.cSurface ./ 1000;
-        plotCellData(grid, concentration, 'linewidth', 2);
-    catch
-        warning('Error in Positive Electrode Concentration for k = %.0e', k(i));
-    end
-    xlabel('Position / m', 'FontSize', 18, 'FontWeight', 'bold');
-    title('Positive Electrode Concentration', 'FontSize', 12, 'FontWeight', 'bold');
-
-    ax = gca;
-    ax.FontSize = 12;
-    ax.FontWeight = 'bold';
-
-    % Subplot 4: Negative Electrode Potential
-    subplot(2, 3, 4);
-    try
-        grid = output{i}.model.NegativeElectrode.Coating.grid;
-        potential = states{i}{end}.NegativeElectrode.Coating.phi;
-        plotCellData(grid, potential, 'linewidth', 2);
-    catch
-        warning('Error in Negative Electrode Potential for k = %.0e', k(i));
-    end
-    xlabel('Position / m', 'FontSize', 18, 'FontWeight', 'bold');
-    title('Negative Electrode Potential', 'FontSize', 12, 'FontWeight', 'bold');
-
-    ax = gca;
-    ax.FontSize = 12;
-    ax.FontWeight = 'bold';
-
-    % Subplot 5: Electrolyte Potential
-    subplot(2, 3, 5);
-    try
-        grid = output{i}.model.Electrolyte.grid;
-        potential = states{i}{end}.Electrolyte.phi;
-        plotCellData(grid, potential, 'linewidth', 2);
-    catch
-        warning('Error in Electrolyte Potential for k = %.0e', k(i));
-    end
-    xlabel('Position / m', 'FontSize', 18, 'FontWeight', 'bold');
-    title('Electrolyte Potential', 'FontSize', 12, 'FontWeight', 'bold');
-
-    ax = gca;
-    ax.FontSize = 12;
-    ax.FontWeight = 'bold';
-
-    % Subplot 6: Positive Electrode Potential
-    subplot(2, 3, 6);
-    try
-        grid = output{i}.model.PositiveElectrode.Coating.grid;
-        potential = states{i}{end}.PositiveElectrode.Coating.phi;
-        plotCellData(grid, potential, 'linewidth', 2);
-    catch
-        warning('Error in Positive Electrode Potential for k = %.0e', k(i));
-    end
-    xlabel('Position / m', 'FontSize', 18, 'FontWeight', 'bold');
-    title('Positive Electrode Potential', 'FontSize', 12, 'FontWeight', 'bold');
-
-    ax = gca;
-    ax.FontSize = 12;
-    ax.FontWeight = 'bold';
-
-    % Save each dashboard as a separate PDF
-    set(gcf, 'Units', 'normalized', 'OuterPosition', [0, 0, 1, 1]); % Full screen
-    set(gcf, 'PaperUnits', 'inches');
-    set(gcf, 'PaperSize', [16, 12]);
-    set(gcf, 'PaperPosition', [0, 0, 16, 12]);
-    exportgraphics(gcf, sprintf('/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/ReactionRate_Dashboard_k_%.0e.pdf', k(i)), ...
-        'ContentType', 'vector', 'Resolution', 300);
-
-    % Close the figure to free memory
-    close(gcf);
-end

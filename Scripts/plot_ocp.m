@@ -85,5 +85,5 @@ set(figureHandle, 'PaperSize', [16, 12]); % Set size to 16x12 inches
 set(figureHandle, 'PaperPosition', [0, 0, 16, 12]); % Fill the page
 
 % Save the plot as a PDF
-exportgraphics(figureHandle, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/OCP.pdf', ...
-    'ContentType', 'vector', 'Resolution', 300);
+%exportgraphics(figureHandle, '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/Figurer/NyRapport/OCP.pdf', ...
+%    'ContentType', 'vector', 'Resolution', 300);

@@ -9,7 +9,7 @@ jsonstruct.Control.DRate = 0.05;
 jsonstruct.Control.lowerCutoffVoltage = 1;
 jsonstruct.Control.upperCutoffVoltage = 3.5;
 jsonstruct.Control.initialControl = 'discharging';
-output = runBatteryJson(jsonstruct);
+% output = runBatteryJson(jsonstruct);
 states = output.states;
 
 % Extract simulation data
