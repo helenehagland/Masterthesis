@@ -1,0 +1,212 @@
+{
+"use_thermal": false,
+"include_current_collectors": false,
+"Geometry": {
+"case": "1D",
+"faceArea": 0.000169
+},
+"NegativeElectrode": {
+"Coating": {
+  "thickness": 7.328e-05,
+  "N": 50,
+  "effectiveDensity": 2970,
+  "bruggemanCoefficient": 1.5,
+  "ActiveMaterial": {
+    "massFraction": 0.95,
+    "density": 4540,
+    "specificHeatCapacity": 632,
+    "thermalConductivity": 1.04,
+    "electronicConductivity": 1e-04,
+    "Interface": {
+      "saturationConcentration": 35259,
+      "volumetricSurfaceArea": 723600,
+      "density": 4540,
+      "numberOfElectronsTransferred": 1,
+      "activationEnergyOfReaction": 5000,
+      "reactionRateConstant": 4.9838e-11,
+      "guestStoichiometry100": 0.95,
+      "guestStoichiometry0": 1e-04,
+      "chargeTransferCoefficient": 0.5,
+      "openCircuitPotential": {
+        "type": "function",
+        "functionname": "computeOCP_XNO_Morrow",
+        "argumentlist": [
+          "concentration",
+          "temperature",
+          "cmax"
+        ]
+      }
+    },
+    "diffusionModelType": "full",
+    "SolidDiffusion": {
+      "activationEnergyOfDiffusion": 5000,
+      "referenceDiffusionCoefficient": 1e-14,
+      "particleRadius": 1e-06,
+      "N": 40
+    }
+  },
+  "Binder": {
+    "density": {
+      "value": 1.325,
+      "unit": "gram/((centi*meter)^3)"
+    },
+    "massFraction": 0.025,
+    "electronicConductivity": 1e-4,
+    "specificHeatCapacity": 632,
+    "thermalConductivity": 1.04
+  },
+  "ConductingAdditive": {
+    "density": {
+      "value": 2,
+      "unit": "gram/((centi*meter)^3)"
+    },
+    "massFraction": 0.02,
+    "electronicConductivity": 110,
+    "specificHeatCapacity": 632,
+    "thermalConductivity": 1.04
+  }
+},
+"CurrentCollector": {
+  "thickness": 1e-05,
+  "N": 10,
+  "electronicConductivity": 59600000.0,
+  "thermalConductivity": 398,
+  "specificHeatCapacity": 385,
+  "density": 8960
+}
+},
+"PositiveElectrode": {
+"Coating": {
+  "thickness": 6.206e-05,
+  "N": 50,
+  "effectiveDensity": 2903,
+  "bruggemanCoefficient": 1.5,
+  "ActiveMaterial": {
+    "massFraction": 0.9704,
+    "density": 4400,
+    "specificHeatCapacity": 700,
+    "thermalConductivity": 2.1,
+    "electronicConductivity": 1e-04,
+    "Interface": {
+      "saturationConcentration": 23279,
+      "volumetricSurfaceArea": 655502,
+      "density": 4400,
+      "numberOfElectronsTransferred": 1,
+      "activationEnergyOfReaction": 5000,
+      "reactionRateConstant": 2.5047e-11,
+      "guestStoichiometry100": 0.023347892045744945,
+      "guestStoichiometry0": 0.95,
+      "chargeTransferCoefficient": 0.5,
+      "openCircuitPotential": {
+        "type": "function",
+        "functionname": "computeOCP_LNMO_Morrow",
+        "argumentlist": [
+          "concentration",
+          "temperature",
+          "cmax"
+        ]
+      }
+    },
+    "diffusionModelType": "full",
+    "SolidDiffusion": {
+      "activationEnergyOfDiffusion": 5000,
+      "referenceDiffusionCoefficient": 1e-15,
+      "particleRadius": 6.565e-06,
+      "N": 40
+    }
+  },
+  "Binder": {
+    "density": {
+      "value": 1.77,
+      "unit": "gram/((centi*meter)^3)"
+    },
+    "massFraction": 0.0138,
+    "electronicConductivity": 1e-04,
+    "specificHeatCapacity": 700,
+    "thermalConductivity": 2.1
+  },
+  "ConductingAdditive": {
+    "density": {
+      "value": 1.85,
+      "unit": "gram/((centi*meter)^3)"
+    },
+    "massFraction": 0.0158,
+    "electronicConductivity": 100,
+    "specificHeatCapacity": 700,
+    "thermalConductivity": 2.1
+  }
+},
+"CurrentCollector": {
+  "thickness": 1e-05,
+  "N": 10,
+  "electronicConductivity": 35500000.0,
+  "thermalConductivity": 170,
+  "specificHeatCapacity": 875.0,
+  "density": 2700
+}
+},
+"Separator": {
+    "thickness": 2.6e-04,
+    "N": 50,
+    "porosity": 0.55,
+    "specificHeatCapacity": 1978,
+    "thermalConductivity": 0.334,
+    "density": 946,
+    "bruggemanCoefficient": 1.5
+},
+"Control": {
+    "controlPolicy": "CCCV",
+    "DRate": 1,
+    "lowerCutoffVoltage": 1.0,
+    "upperCutoffVoltage": 4.5,
+    "dIdtLimit": 0.01,
+    "dEdtLimit": 0.01,
+    "rampupTime": 0.1
+},
+"Electrolyte": {
+    "initialConcentration": {"value" : 1,
+                             "unit" : "mol/litre"},
+    "specificHeatCapacity": 2055,
+    "thermalConductivity": 0.6,
+    "density": 1200,
+    "ionicConductivity": {
+      "type": "function",
+      "functionname": "computeElectrolyteConductivity_default",
+      "argumentlist": [
+        "concentration",
+        "temperature"
+     ]
+    },
+    "diffusionCoefficient": {
+      "type": "function",
+      "functionname": "computeDiffusionCoefficient_default",
+      "argumentlist": [
+        "concentration",
+        "temperature"
+      ]
+    },
+    "species": {
+      "chargeNumber": 1,
+      "transferenceNumber": 0.2594,
+      "nominalConcentration": 1000
+    },
+    "bruggemanCoefficient": 1.5
+},
+"ThermalModel": {
+"externalHeatTransferCoefficient": 1000.0,
+"externalTemperature": 298.15
+},
+"TimeStepping": {
+"totalTime": 72000,
+"numberOfTimeSteps": 300,
+"useRampup": true
+},
+"Output": {
+"variables": [
+  "energy"
+]
+},
+"SOC": 0.001,
+"initT": 298.15
+}
+
