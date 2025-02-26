@@ -9,7 +9,7 @@
 "Coating": {
   "thickness": 7.328e-05,
   "N": 50,
-  "effectiveDensity": 2230,
+  "effectiveDensity": 2970,
   "bruggemanCoefficient": 1.5,
   "ActiveMaterial": {
     "massFraction": 0.95,
@@ -24,8 +24,8 @@
       "numberOfElectronsTransferred": 1,
       "activationEnergyOfReaction": 5000,
       "reactionRateConstant": 4.9838e-11,
-      "guestStoichiometry100": 0.6278466226277639,
-      "guestStoichiometry0": 0.06585074895084256,
+      "guestStoichiometry100": 0.95,
+      "guestStoichiometry0": 1e-04,
       "chargeTransferCoefficient": 0.5,
       "openCircuitPotential": {
         "type": "function",
@@ -79,7 +79,7 @@
 "Coating": {
   "thickness": 6.206e-05,
   "N": 50,
-  "effectiveDensity": 2940,
+  "effectiveDensity": 2903,
   "bruggemanCoefficient": 1.5,
   "ActiveMaterial": {
     "massFraction": 0.9704,
@@ -93,9 +93,9 @@
       "density": 4400,
       "numberOfElectronsTransferred": 1,
       "activationEnergyOfReaction": 5000,
-      "reactionRateConstant": 1e-12,
-      "guestStoichiometry100": 0.01,
-      "guestStoichiometry0": 0.8575063693673403,
+      "reactionRateConstant": 5.5047e-11,
+      "guestStoichiometry100": 0.023347892045744945,
+      "guestStoichiometry0": 0.95,
       "chargeTransferCoefficient": 0.5,
       "openCircuitPotential": {
         "type": "function",
