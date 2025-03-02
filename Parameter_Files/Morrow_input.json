@@ -157,10 +157,10 @@
 "Control": {
     "controlPolicy": "CCCV",
     "DRate": 1,
-    "lowerCutoffVoltage": 1.0,
+    "lowerCutoffVoltage": 2.5,
     "upperCutoffVoltage": 4.5,
-    "dIdtLimit": 0.01,
-    "dEdtLimit": 0.01,
+    "dIdtLimit": 0.001,
+    "dEdtLimit": 0.001,
     "rampupTime": 0.1
 },
 "Electrolyte": {
