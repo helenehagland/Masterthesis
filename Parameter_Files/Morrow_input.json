@@ -24,7 +24,7 @@
       "numberOfElectronsTransferred": 1,
       "activationEnergyOfReaction": 5000,
       "reactionRateConstant": 4.9838e-11,
-      "guestStoichiometry100": 0.6278466226277639,
+      "guestStoichiometry100": 0.85,
       "guestStoichiometry0": 0.06585074895084256,
       "chargeTransferCoefficient": 0.5,
       "openCircuitPotential": {
@@ -157,8 +157,8 @@
 "Control": {
     "controlPolicy": "CCCV",
     "DRate": 1,
-    "lowerCutoffVoltage": 1.0,
-    "upperCutoffVoltage": 4.5,
+    "lowerCutoffVoltage": 2.45,
+    "upperCutoffVoltage": 3.5,
     "dIdtLimit": 0.01,
     "dEdtLimit": 0.01,
     "rampupTime": 0.1

@@ -1,0 +1,93 @@
+% **Plotting Options** 
+plotCharge = true;     
+plotDischarge = true;  
+
+% **Load and Merge Configurations**
+% **Load and Merge Configurations**
+jsonstruct = mergeJsonStructs({parseBattmoJson('cccv_control.json'), ...
+                               parseBattmoJson('Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json')});
+jsonstruct.Control = struct('CRate', 0.05, 'DRate', 0.05, 'lowerCutoffVoltage', 3, ...
+                            'upperCutoffVoltage', 4.5, 'initialControl', 'charging', ...
+                            'controlPolicy', 'CCCV');  % Added controlPolicy here
+
+% **Run Simulation**
+output = runBatteryJson(jsonstruct);
+states = output.states;
+
+% **Extract Model Data**
+time = cellfun(@(state) state.time, states);
+voltage = cellfun(@(state) state.Control.E, states);
+current = cellfun(@(state) state.Control.I, states);
+
+% **Index Charging and Discharging Phases**
+charge_idx = current < 0;
+discharge_idx = current > 0;
+
+% **Calculate Capacity for Charging**
+if plotCharge
+    final_soc = max(0, capacity_charge(end));  % Prevent negative SOC    disp(['Final SOC after Charging: ', num2str(final_soc), ' mAh']);
+end
+if plotCharge
+    dt_charge = diff([0; time(charge_idx)]);
+    capacity_charge = cumsum(current(charge_idx) .* dt_charge) / 3.6;
+    capacity_charge = max(capacity_charge) - (capacity_charge - min(capacity_charge));
+end
+
+
+% **Calculate Capacity for Discharging with Cutoff**
+if plotDischarge && exist('final_soc', 'var')
+    jsonstruct.Control.SOC = final_soc;  % Set initial SOC for discharge to final SOC from charge
+    disp(['Initial SOC for Discharging: ', num2str(jsonstruct.Control.SOC), ' mAh']);
+end
+if plotDischarge
+    discharge_start_idx = find(discharge_idx, 1);
+    if ~isempty(discharge_start_idx)
+        time_discharge = time(discharge_start_idx:end) - time(discharge_start_idx);
+        voltage_discharge = voltage(discharge_start_idx:end);
+        current_discharge = current(discharge_start_idx:end);
+        
+        stop_idx = find(voltage_discharge < 2.5, 1);
+        if ~isempty(stop_idx)
+            time_discharge = time_discharge(1:stop_idx);
+            voltage_discharge = voltage_discharge(1:stop_idx);
+            current_discharge = current_discharge(1:stop_idx);
+        end
+        
+        dt_discharge = diff([0; time_discharge]);
+        capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
+        capacity_discharge = capacity_discharge - min(capacity_discharge);
+    end
+end
+
+% **Load Experimental Data**
+file_path = '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
+exp_data = readtable(file_path);
+
+if plotCharge
+    exp_voltage_charge = exp_data.VoltageCby20_charge;
+    exp_capacity_charge = exp_data.CapacityCby20_charge;
+end
+
+if plotDischarge
+    exp_voltage_discharge = exp_data.VoltageCby20_discharge;
+    exp_capacity_discharge = exp_data.CapacityCby20_discharge;
+end
+
+% **Plot Data**
+figure; hold on;
+if plotCharge
+    plot(capacity_charge, voltage(charge_idx), '-', 'LineWidth', 3, 'DisplayName', 'Model Charging');
+    plot(exp_capacity_charge, exp_voltage_charge, '--', 'LineWidth', 2, 'DisplayName', 'Experimental (Charge Only)');
+end
+if plotDischarge
+    plot(capacity_discharge, voltage_discharge, '-', 'LineWidth', 3, 'DisplayName', 'Model Discharging');
+    plot(exp_capacity_discharge, exp_voltage_discharge, '--', 'LineWidth', 2, 'DisplayName', 'Experimental (Discharge Only)');
+end
+
+% **Plot Formatting**
+xlabel('Capacity / mA \cdot h', 'FontSize', 14, 'FontWeight', 'bold');
+ylabel('Voltage / V', 'FontSize', 14, 'FontWeight', 'bold');
+title('Voltage vs Capacity: Model vs Experimental', 'FontSize', 16);
+legend('Location', 'best', 'FontSize', 12);
+grid on;
+hold off;
