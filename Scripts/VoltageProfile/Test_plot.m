@@ -12,6 +12,8 @@ jsonstruct.Control.CRate = 0.05;
 jsonstruct.Control.DRate = 0.05;
 jsonstruct.Control.lowerCutoffVoltage = 2.5;
 jsonstruct.Control.upperCutoffVoltage = 3.5;
+jsonstruct.Control.numberOfCycles = 1;
+
 
 % Start with charging and simulate the full curve
 jsonstruct.Control.initialControl = 'charging';
@@ -30,34 +32,57 @@ charge_idx = current < 0;  % Negative current = charging
 discharge_idx = current > 0;  % Positive current = discharging
 
 % **Calculate Capacity for Charging**
+% Extract first charge cycle
 if plotCharge
-    dt_charge = diff([0; time(charge_idx)]);
-    capacity_charge = cumsum(current(charge_idx) .* dt_charge) / 3.6;
-    capacity_charge = capacity_charge - min(capacity_charge); % Normalize to start at zero
-    capacity_charge = max(capacity_charge) - capacity_charge; % Flip charging curve
+    first_charge_start = find(charge_idx, 1, 'first'); % Find first charging point
+    first_charge_end = find(voltage(charge_idx) >= jsonstruct.Control.upperCutoffVoltage, 1, 'first'); % Stop at cutoff
+
+    if isempty(first_charge_end)
+        first_charge_end = length(time); % Use all data if no cutoff is found
+    end
+
+    valid_charge_range = first_charge_start:first_charge_end;
+    time_charge = time(valid_charge_range) - time(valid_charge_range(1)); % Normalize time
+    voltage_charge = voltage(valid_charge_range);
+    current_charge = current(valid_charge_range);
+
+    % Correct capacity calculation
+    dt_charge = diff([0; time_charge]);
+    capacity_charge = cumsum(abs(current_charge) .* dt_charge) / 3.6;
+    capacity_charge = capacity_charge - min(capacity_charge);
 end
 
 % **Find and Extract the First Full Discharge Cycle**
 if plotDischarge
+    % Find all points where discharge starts and ends
     discharge_start_idxs = find(diff([0; discharge_idx]) == 1);
-    
-    if length(discharge_start_idxs) >= 2
-        first_discharge_start = discharge_start_idxs(1);
-        next_discharge_start = discharge_start_idxs(2);
-    else
-        first_discharge_start = discharge_start_idxs(1);
-        next_discharge_start = length(time);
-    end
-    
-    valid_range = first_discharge_start:next_discharge_start-1;
-    time_discharge = time(valid_range) - time(valid_range(1));
-    voltage_discharge = voltage(valid_range);
-    current_discharge = current(valid_range);
+    discharge_end_idxs = find(diff([discharge_idx; 0]) == -1);
 
-    % Correct capacity calculation
-    dt_discharge = diff([0; time_discharge]);
-    capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
-    capacity_discharge = capacity_discharge - min(capacity_discharge);
+    % Identify the **second** full discharge cycle
+    if length(discharge_start_idxs) >= 2 && length(discharge_end_idxs) >= 2
+        second_discharge_start = discharge_start_idxs(2);  % Now using the **second cycle**
+        
+        % Find the first valid discharge end that comes after this start
+        valid_end_idxs = discharge_end_idxs(discharge_end_idxs > second_discharge_start);
+        if ~isempty(valid_end_idxs)
+            second_discharge_end = valid_end_idxs(1);  % Take the first valid end after start
+        else
+            second_discharge_end = length(time); % Fallback: use full length if no clear end found
+        end
+
+        % Extract only this range
+        valid_range = second_discharge_start:second_discharge_end;
+        time_discharge = time(valid_range) - time(valid_range(1)); % Normalize time
+        voltage_discharge = voltage(valid_range);
+        current_discharge = current(valid_range);
+
+        % Correct capacity calculation
+        dt_discharge = diff([0; time_discharge]);
+        capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
+        capacity_discharge = capacity_discharge - min(capacity_discharge); % Normalize to zero
+    else
+        warning('No second discharge cycle found!');
+    end
 end
 
 % **Load Experimental Data**
@@ -73,7 +98,7 @@ figure;
 hold on;
 
 if plotCharge
-    plot(capacity_charge, voltage(charge_idx), '-', 'LineWidth', 3, 'Color', [0 0.447 0.741], 'DisplayName', 'Model Charging');
+    plot(capacity_charge, voltage_charge, '-', 'LineWidth', 3, 'Color', [0 0.447 0.741], 'DisplayName', 'Model Charging');
 end
 
 if plotDischarge
