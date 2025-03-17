@@ -12,8 +12,7 @@ jsonstruct.Control.CRate = 0.05;
 jsonstruct.Control.DRate = 0.05;
 jsonstruct.Control.lowerCutoffVoltage = 2.5;
 jsonstruct.Control.upperCutoffVoltage = 3.5;
-jsonstruct.Control.numberOfCycles = 1;
-
+jsonstruct.Control.numberOfCycles = 5; % Run five full cycles
 
 % Start with charging and simulate the full curve
 jsonstruct.Control.initialControl = 'charging';
@@ -31,57 +30,37 @@ current = cellfun(@(state) state.Control.I, states);
 charge_idx = current < 0;  % Negative current = charging
 discharge_idx = current > 0;  % Positive current = discharging
 
-% **Calculate Capacity for Charging**
-% Extract first charge cycle
-if plotCharge
-    first_charge_start = find(charge_idx, 1, 'first'); % Find first charging point
-    first_charge_end = find(voltage(charge_idx) >= jsonstruct.Control.upperCutoffVoltage, 1, 'first'); % Stop at cutoff
+% **Extract All Charge and Discharge Cycles and Normalize to Capacity = 0**
+figure;
+hold on;
 
-    if isempty(first_charge_end)
-        first_charge_end = length(time); % Use all data if no cutoff is found
+for cycle = 1:5
+    % Find charge cycle start and end
+    if length(find(diff([0; charge_idx]) == 1)) >= cycle && length(find(diff([charge_idx; 0]) == -1)) >= cycle
+        charge_start = find(diff([0; charge_idx]) == 1, cycle, 'first');
+        charge_end = find(diff([charge_idx; 0]) == -1, cycle, 'first');
+        valid_charge_range = charge_start(end):charge_end(end);
+        time_charge = time(valid_charge_range) - time(valid_charge_range(1));
+        voltage_charge = voltage(valid_charge_range);
+        current_charge = current(valid_charge_range);
+        dt_charge = diff([0; time_charge]);
+        capacity_charge = cumsum(abs(current_charge) .* dt_charge) / 3.6;
+        capacity_charge = capacity_charge - min(capacity_charge); % Normalize to start at 0
+        plot(capacity_charge, voltage_charge, '-', 'LineWidth', 2, 'DisplayName', ['Model Charging Cycle ', num2str(cycle)]);
     end
-
-    valid_charge_range = first_charge_start:first_charge_end;
-    time_charge = time(valid_charge_range) - time(valid_charge_range(1)); % Normalize time
-    voltage_charge = voltage(valid_charge_range);
-    current_charge = current(valid_charge_range);
-
-    % Correct capacity calculation
-    dt_charge = diff([0; time_charge]);
-    capacity_charge = cumsum(abs(current_charge) .* dt_charge) / 3.6;
-    capacity_charge = capacity_charge - min(capacity_charge);
-end
-
-% **Find and Extract the First Full Discharge Cycle**
-if plotDischarge
-    % Find all points where discharge starts and ends
-    discharge_start_idxs = find(diff([0; discharge_idx]) == 1);
-    discharge_end_idxs = find(diff([discharge_idx; 0]) == -1);
-
-    % Identify the **second** full discharge cycle
-    if length(discharge_start_idxs) >= 2 && length(discharge_end_idxs) >= 2
-        second_discharge_start = discharge_start_idxs(2);  % Now using the **second cycle**
-        
-        % Find the first valid discharge end that comes after this start
-        valid_end_idxs = discharge_end_idxs(discharge_end_idxs > second_discharge_start);
-        if ~isempty(valid_end_idxs)
-            second_discharge_end = valid_end_idxs(1);  % Take the first valid end after start
-        else
-            second_discharge_end = length(time); % Fallback: use full length if no clear end found
-        end
-
-        % Extract only this range
-        valid_range = second_discharge_start:second_discharge_end;
-        time_discharge = time(valid_range) - time(valid_range(1)); % Normalize time
-        voltage_discharge = voltage(valid_range);
-        current_discharge = current(valid_range);
-
-        % Correct capacity calculation
+    
+    % Find discharge cycle start and end
+    if length(find(diff([0; discharge_idx]) == 1)) >= cycle && length(find(diff([discharge_idx; 0]) == -1)) >= cycle
+        discharge_start = find(diff([0; discharge_idx]) == 1, cycle, 'first');
+        discharge_end = find(diff([discharge_idx; 0]) == -1, cycle, 'first');
+        valid_discharge_range = discharge_start(end):discharge_end(end);
+        time_discharge = time(valid_discharge_range) - time(valid_discharge_range(1));
+        voltage_discharge = voltage(valid_discharge_range);
+        current_discharge = current(valid_discharge_range);
         dt_discharge = diff([0; time_discharge]);
         capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
-        capacity_discharge = capacity_discharge - min(capacity_discharge); % Normalize to zero
-    else
-        warning('No second discharge cycle found!');
+        capacity_discharge = capacity_discharge - min(capacity_discharge); % Normalize to start at 0
+        plot(capacity_discharge, voltage_discharge, '-', 'LineWidth', 2, 'DisplayName', ['Model Discharging Cycle ', num2str(cycle)]);
     end
 end
 
@@ -93,18 +72,6 @@ exp_capacity_charge = experimental_data_fullcell.CapacityCby20_charge;
 exp_voltage_discharge = experimental_data_fullcell.VoltageCby20_discharge;
 exp_capacity_discharge = experimental_data_fullcell.CapacityCby20_discharge;
 
-% **Plot Full Model Curve vs Experimental Data**
-figure;
-hold on;
-
-if plotCharge
-    plot(capacity_charge, voltage_charge, '-', 'LineWidth', 3, 'Color', [0 0.447 0.741], 'DisplayName', 'Model Charging');
-end
-
-if plotDischarge
-    plot(capacity_discharge, voltage_discharge, '-', 'LineWidth', 3, 'Color', [0.85 0.325 0.098], 'DisplayName', 'Model Discharging');
-end
-
 plot(exp_capacity_charge, exp_voltage_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Experimental (Charge)');
 plot(exp_capacity_discharge, exp_voltage_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Experimental (Discharge)');
 
@@ -114,8 +81,3 @@ title('Voltage vs Capacity: Model vs Experimental', 'FontSize', 16);
 legend('Location', 'best', 'FontSize', 12);
 grid on;
 hold off;
-
-% **Debugging Output**
-disp(['Discharge starts at timestep: ', num2str(first_discharge_start)]);
-disp(['Voltage range (Discharge): ', num2str(min(voltage_discharge)), ' to ', num2str(max(voltage_discharge)), ' V']);
-disp(['Capacity range (Model - Discharge): ', num2str(min(capacity_discharge)), ' to ', num2str(max(capacity_discharge)), ' mAh']);
