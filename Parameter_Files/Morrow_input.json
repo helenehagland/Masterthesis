@@ -16,16 +16,16 @@
     "density": 4540,
     "specificHeatCapacity": 632,
     "thermalConductivity": 1.04,
-    "electronicConductivity": 1e-04,
+    "electronicConductivity": 100,
     "Interface": {
       "saturationConcentration": 35259,
       "volumetricSurfaceArea": 723600,
       "density": 4540,
       "numberOfElectronsTransferred": 1,
       "activationEnergyOfReaction": 5000,
-      "reactionRateConstant": 4.9838e-11,
-      "guestStoichiometry100": 0.85,
-      "guestStoichiometry0": 0.06585074895084256,
+      "reactionRateConstant": 4.9838e-12,
+      "guestStoichiometry100": 0.9,
+      "guestStoichiometry0": 0.01,
       "chargeTransferCoefficient": 0.5,
       "openCircuitPotential": {
         "type": "function",
@@ -86,7 +86,7 @@
     "density": 4400,
     "specificHeatCapacity": 700,
     "thermalConductivity": 2.1,
-    "electronicConductivity": 1e-04,
+    "electronicConductivity": 100,
     "Interface": {
       "saturationConcentration": 23279,
       "volumetricSurfaceArea": 655502,
@@ -95,7 +95,7 @@
       "activationEnergyOfReaction": 5000,
       "reactionRateConstant": 1e-12,
       "guestStoichiometry100": 0.01,
-      "guestStoichiometry0": 0.8575063693673403,
+      "guestStoichiometry0": 0.9,
       "chargeTransferCoefficient": 0.5,
       "openCircuitPotential": {
         "type": "function",
@@ -187,7 +187,7 @@
     },
     "species": {
       "chargeNumber": 1,
-      "transferenceNumber": 0.2594,
+      "transferenceNumber": 0.25,
       "nominalConcentration": 1000
     },
     "bruggemanCoefficient": 1.5
@@ -198,7 +198,7 @@
 },
 "TimeStepping": {
 "totalTime": 144000,
-"numberOfTimeSteps": 300,
+"numberOfTimeSteps": 1000,
 "useRampup": true
 },
 "Output": {
