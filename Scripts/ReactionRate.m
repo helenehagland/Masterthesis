@@ -1,100 +1,117 @@
- % **Plotting Options**
+% **Plotting Options**
 plotCharge = true;    % Set to true if you want to plot charging
-plotDischarge = true;  % Set to true if you want to plot discharging
+plotDischarge = true; % Set to true if you want to plot discharging
 
-% Load input configuration
+% **Load input configuration**
 jsonstruct = parseBattmoJson('Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
 
-% Set control parameters
+% **Set control parameters**
 cccv_control_protocol = parseBattmoJson('cccv_control.json');
 jsonstruct = mergeJsonStructs({cccv_control_protocol, jsonstruct});
-jsonstruct.Control.CRate = 0.05;
-jsonstruct.Control.DRate = 0.05;
-jsonstruct.Control.lowerCutoffVoltage = 1;
+jsonstruct.Control.CRate = 0.05; % Changeable C-rate
+jsonstruct.Control.DRate = 0.05; % Changeable D-rate
+jsonstruct.Control.lowerCutoffVoltage = 2.5;
 jsonstruct.Control.upperCutoffVoltage = 3.5;
 jsonstruct.Control.initialControl = 'charging';
-jsonstruct.Control.nextControl = 'discharging';
 
-% Create a vector of different diffusion coefficients
-k_pos = [1e-12, 2e-12, 5e-12, 1e-11];
+% **Define different reaction rate constants (positive electrode only)**
+reactionRateFactors = [0.01, 0.1, 1, 10, 100]; % Factor to modify the reaction rate
+base_k_pos = jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant;
 
-% Instantiate empty cell arrays to store outputs and states
-output = cell(size(k_pos));
-states = cell(size(k_pos));
+% **Preallocate storage for results**
+capacity_charge_all = cell(length(reactionRateFactors), 1);
+voltage_charge_all = cell(length(reactionRateFactors), 1);
+capacity_discharge_all = cell(length(reactionRateFactors), 1);
+voltage_discharge_all = cell(length(reactionRateFactors), 1);
 
-% Run simulations for each diffusion coefficient
-for i = 1:numel(k_pos)
-    jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = k_pos(i);
-    output{i} = runBatteryJson(jsonstruct);
-    states{i} = output{i}.states;
+% **Run simulations for different reaction rate constants**
+for i = 1:length(reactionRateFactors)
+    k_factor = reactionRateFactors(i);
+    jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = base_k_pos * k_factor;
+
+    % **Run simulation**
+    output = runBatteryJson(jsonstruct);
+    states = output.states;
+
+    % **Extract model data**
+    time = cellfun(@(state) state.time, states);
+    voltage = cellfun(@(state) state.Control.E, states);
+    current = cellfun(@(state) state.Control.I, states);
+
+    % **Identify charge/discharge cycles**
+    charge_idx = current < 0;  
+    discharge_idx = current > 0;  
+
+    % **Find cycle start and end indices**
+    charge_starts = find(diff([0; charge_idx]) == 1);
+    charge_ends = find(diff([charge_idx; 0]) == -1);
+    discharge_starts = find(diff([0; discharge_idx]) == 1);
+    discharge_ends = find(diff([discharge_idx; 0]) == -1);
+
+    % **Ensure valid cycles exist**
+    num_cycles = min([length(charge_starts), length(charge_ends), length(discharge_starts), length(discharge_ends)]);
+    if num_cycles == 0
+        warning(['No valid cycles detected for k factor = ', num2str(k_factor)]);
+        continue;
+    end
+
+    % **Extract charge cycle**
+    charge_range = charge_starts(1):charge_ends(1);
+    time_charge = time(charge_range) - time(charge_range(1));
+    voltage_charge = voltage(charge_range);
+    current_charge = current(charge_range);
+    dt_charge = diff([0; time_charge]);
+    capacity_charge = cumsum(abs(current_charge) .* dt_charge) / 3.6;
+    capacity_charge = capacity_charge - min(capacity_charge); % Normalize
+
+    capacity_charge_all{i} = capacity_charge;
+    voltage_charge_all{i} = voltage_charge;
+
+    % **Extract discharge cycle**
+    discharge_range = discharge_starts(1):discharge_ends(1);
+    time_discharge = time(discharge_range) - time(discharge_range(1));
+    voltage_discharge = voltage(discharge_range);
+    current_discharge = current(discharge_range);
+    dt_discharge = diff([0; time_discharge]);
+    capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
+    capacity_discharge = capacity_discharge - min(capacity_discharge); % Normalize
+
+    capacity_discharge_all{i} = capacity_discharge;
+    voltage_discharge_all{i} = voltage_discharge;
 end
 
-% Load Experimental Data
-file_path_fullcell = '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
+% **Load Experimental Data**
+file_path_fullcell = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
 experimental_data_fullcell = readtable(file_path_fullcell);
-if plotCharge && plotDischarge
-    exp_voltage_fullcell = experimental_data_fullcell.VoltageCby20_both;
-    exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20_both;
-    exp_label = 'Experimental (Both)';
-elseif plotDischarge && ~plotCharge
-    exp_voltage_fullcell = experimental_data_fullcell.VoltageCby20;
-    exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20;
-    exp_label = 'Experimental (Discharge Only)';
-elseif plotCharge && ~plotDischarge
-    exp_voltage_fullcell = experimental_data_fullcell.VoltageCby20_charge;
-    exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20_charge;
-    exp_label = 'Experimental (Charge Only)';
-end
-exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20_both;
+exp_voltage_charge = experimental_data_fullcell.VoltageCby20_charge;
+exp_capacity_charge = experimental_data_fullcell.CapacityCby20_charge;
+exp_voltage_discharge = experimental_data_fullcell.VoltageCby20_discharge;
+exp_capacity_discharge = experimental_data_fullcell.CapacityCby20_discharge;
 
-% Plot Voltage vs Capacity for Different Diffusion Coefficients
-figure;
-hold on;
-legendEntries = {};
+% **Plot Results**
+figure; hold on;
+colors = lines(length(reactionRateFactors));
 
-for i = 1:numel(D0)
-    time = cellfun(@(state) state.time, states{i});
-    voltage = cellfun(@(state) state.('Control').E, states{i});
-    current = cellfun(@(state) state.('Control').I, states{i});
+for i = 1:length(reactionRateFactors)
+    k_factor = reactionRateFactors(i);
     
-    charge_idx = (current < 0) & (voltage > jsonstruct.Control.lowerCutoffVoltage);
-    discharge_idx = (current > 0) & (voltage < jsonstruct.Control.upperCutoffVoltage);
+    % **Plot charge cycle**
+    plot(capacity_charge_all{i}, voltage_charge_all{i}, '-', 'Color', colors(i, :), 'LineWidth', 2, ...
+        'DisplayName', ['Charge, k = ', num2str(k_factor), ' * k_{base}']);
     
-    if plotCharge
-        dt_charge = diff([0; time(charge_idx)]);
-        capacity_charge = cumsum(current(charge_idx) .* dt_charge) / 3.6;
-        capacity_charge = capacity_charge - min(capacity_charge);
-        capacity_charge = max(capacity_charge) - capacity_charge;
-        plot(capacity_charge, voltage(charge_idx), '-', 'LineWidth', 2);
-        legendEntries{end+1} = sprintf('k0 = %.0e (Charge)', k_pos(i));
-disp(['k0 = ', num2str(k_pos(i)), ' | Capacity Charge Range: ', num2str(min(capacity_charge)), ' to ', num2str(max(capacity_charge)), ' mAh']);
-    end
-
-    if plotDischarge
-        discharge_start_idx = find(current > 0, 1, 'first');
-        if ~isempty(discharge_start_idx) && any(discharge_idx) && any(current_discharge > 0) && all(voltage_discharge < jsonstruct.Control.upperCutoffVoltage)
-            time_discharge = time(discharge_start_idx:end) - time(discharge_start_idx);
-            voltage_discharge = voltage(discharge_start_idx:end);
-            current_discharge = current(discharge_start_idx:end);
-            dt_discharge = diff([0; time_discharge]);
-            capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
-            capacity_discharge = capacity_discharge - min(capacity_discharge);
-            plot(capacity_discharge, voltage_discharge, '-', 'LineWidth', 2);
-            legendEntries{end+1} = sprintf('k0 = %.0e (Discharge)', k_pos(i));
-disp(['k0 = ', num2str(k_pos(i)), ' | Voltage Range (Discharge): ', num2str(min(voltage_discharge)), ' to ', num2str(max(voltage_discharge)), ' V']);
-disp(['k0 = ', num2str(k_pos(i)), ' | Current Range (Discharge): ', num2str(min(current_discharge)), ' to ', num2str(max(current_discharge)), ' A']);
-disp(['k0 = ', num2str(k_pos(i)), ' | Capacity Discharge Range: ', num2str(min(capacity_discharge)), ' to ', num2str(max(capacity_discharge)), ' mAh']);
-        end
-    end
+    % **Plot discharge cycle**
+    plot(capacity_discharge_all{i}, voltage_discharge_all{i}, '-', 'Color', colors(i, :), 'LineWidth', 2, ...
+        'DisplayName', ['Discharge, k = ', num2str(k_factor), ' * k_{base}']);
 end
 
-% Plot Experimental Data
-plot(exp_capacity_fullcell, exp_voltage_fullcell, 'k-', 'LineWidth', 2, 'DisplayName', 'Experimental');
-legendEntries{end+1} = 'Experimental';
+% **Plot Experimental Data**
+plot(exp_capacity_charge, exp_voltage_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Exp (Charge)');
+plot(exp_capacity_discharge, exp_voltage_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Exp (Discharge)');
 
+% **Labels and Legend**
 xlabel('Capacity / mA \cdot h', 'FontSize', 14, 'FontWeight', 'bold');
 ylabel('Voltage / V', 'FontSize', 14, 'FontWeight', 'bold');
-title('Voltage vs Capacity: Reaction Coefficient vs Experimental', 'FontSize', 16);
-legend(legendEntries, 'Location', 'best', 'FontSize', 12);
+title('Voltage vs Capacity for Different Reaction Rate Constants (Positive Electrode)', 'FontSize', 16);
+legend('Location', 'best', 'FontSize', 12);
 grid on;
 hold off;

@@ -1,25 +1,25 @@
 % Load Experimental Full-Cell Data
-file_path_fullcell = '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
+file_path_fullcell = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
 experimental_data_fullcell = readtable(file_path_fullcell);
-exp_voltage_fullcell = experimental_data_fullcell.VoltageCby20;
-exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20;
+exp_voltage_fullcell = experimental_data_fullcell.VoltageCby20_discharge;
+exp_capacity_fullcell = experimental_data_fullcell.CapacityCby20_discharge;
 soc_exp = exp_capacity_fullcell ./ max(exp_capacity_fullcell); % Normalize to SOC
 
 % Load Experimental Half-Cell Data
 plot_halfcells = true;
 if plot_halfcells
     % LNMO Data
-    file_path_lnmo = '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/OCP_LNMO_RCHL374.xlsx';
+    file_path_lnmo = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/OCP_LNMO_RCHL374.xlsx';
     experimental_data_lnmo = readtable(file_path_lnmo, 'Sheet', 'Voltage_Capacity');
-    exp_voltage_lnmo = experimental_data_lnmo.Voltage;
-    exp_capacity_lnmo = experimental_data_lnmo.Capacity;
+    exp_voltage_lnmo = experimental_data_lnmo.Voltage_Discharge;
+    exp_capacity_lnmo = experimental_data_lnmo.Capacity_Discharge;
     soc_exp_lnmo = exp_capacity_lnmo ./ max(exp_capacity_lnmo);
 
     % XNO Data
-    file_path_xno = '/Users/helenehagland/Documents/NTNU/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/OCP_XNO_RCHX143.xlsx';
+    file_path_xno = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/OCP_XNO_RCHX143.xlsx';
     experimental_data_xno = readtable(file_path_xno, 'Sheet', 'Voltage_Capacity');
-    exp_voltage_xno = experimental_data_xno.Voltage; 
-    exp_capacity_xno = experimental_data_xno.Capacity; 
+    exp_voltage_xno = experimental_data_xno.Voltage_Discharge; 
+    exp_capacity_xno = experimental_data_xno.Capacity_Discharge; 
 
     % Sort XNO data and normalize SOC
     [exp_capacity_xno, idx] = sort(exp_capacity_xno, 'descend');
@@ -84,3 +84,18 @@ title('Full-Cell OCP (Model vs Experimental)', 'FontSize', 22, 'FontWeight', 'bo
 grid on;
 legend('Location', 'best', 'FontSize', 14);
 hold off;
+
+
+% Create and export a table with OCP values and their difference
+% Flip XNO values for correct alignment with increasing SOC
+ocp_xno_flipped = flip(ocp_xno_fullcell); 
+
+% Calculate voltage difference
+ocp_diff = ocp_lnmo_fullcell - ocp_xno_flipped;
+
+% Create table
+ocp_table = table(soc_ocp_fullcell', ocp_lnmo_fullcell', ocp_xno_flipped', ocp_diff', ...
+    'VariableNames', {'SOC', 'Voltage_LNMO', 'Voltage_XNO', 'LNMO_minus_XNO'});
+
+% Save to Excel
+writetable(ocp_table, 'OCP_LNMO_XNO_Table.xlsx');
