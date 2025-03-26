@@ -23,9 +23,9 @@
       "density": 4540,
       "numberOfElectronsTransferred": 1,
       "activationEnergyOfReaction": 5000,
-      "reactionRateConstant": 4.9838e-12,
-      "guestStoichiometry100": 0.9,
-      "guestStoichiometry0": 0.01,
+      "reactionRateConstant": 4.9838e-15,
+      "guestStoichiometry100": 0.85,
+      "guestStoichiometry0": 0.2,
       "chargeTransferCoefficient": 0.5,
       "openCircuitPotential": {
         "type": "function",
@@ -93,7 +93,7 @@
       "density": 4400,
       "numberOfElectronsTransferred": 1,
       "activationEnergyOfReaction": 5000,
-      "reactionRateConstant": 1e-12,
+      "reactionRateConstant": 1e-15,
       "guestStoichiometry100": 0.01,
       "guestStoichiometry0": 0.9,
       "chargeTransferCoefficient": 0.5,
@@ -198,7 +198,7 @@
 },
 "TimeStepping": {
 "totalTime": 144000,
-"numberOfTimeSteps": 1000,
+"numberOfTimeSteps": 300,
 "useRampup": true
 },
 "Output": {
