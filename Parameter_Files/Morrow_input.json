@@ -17,7 +17,7 @@
     "specificHeatCapacity": 632,
     "thermalConductivity": 1.04,
     "electronicConductivity": 100,
-    "Interface": {
+    "Interface": {       
       "saturationConcentration": 35259,
       "volumetricSurfaceArea": 723600,
       "density": 4540,
@@ -159,8 +159,8 @@
     "DRate": 1,
     "lowerCutoffVoltage": 2.45,
     "upperCutoffVoltage": 3.5,
-    "dIdtLimit": 0.01,
-    "dEdtLimit": 0.01,
+    "dIdtLimit": 1e-10,
+    "dEdtLimit": 1e-10,
     "rampupTime": 0.1
 },
 "Electrolyte": {
@@ -198,7 +198,7 @@
 },
 "TimeStepping": {
 "totalTime": 144000,
-"numberOfTimeSteps": 300,
+"numberOfTimeSteps": 14400,
 "useRampup": true
 },
 "Output": {
