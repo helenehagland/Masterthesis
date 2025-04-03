@@ -3,7 +3,7 @@ plotCharge = true;    % Set to true if you want to plot charging
 plotDischarge = true;  % Set to true if you want to plot discharging
 
 % Load input configuration
-jsonstruct = parseBattmoJson('Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
+jsonstruct = parseBattmoJson('/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
 
 % Set control parameters
 cccv_control_protocol = parseBattmoJson('cccv_control.json');

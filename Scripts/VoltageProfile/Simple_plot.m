@@ -3,16 +3,19 @@ plotCharge = true;    % Set to true if you want to plot charging
 plotDischarge = true;  % Set to true if you want to plot discharging
 
 % Load input configuration
-jsonstruct = parseBattmoJson('Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
+jsonstruct = parseBattmoJson('/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
 
-% Set control parameters
-cccv_control_protocol = parseBattmoJson('cccv_control.json');
-jsonstruct = mergeJsonStructs({cccv_control_protocol, jsonstruct});
+jsonstruct.Control.initialControl = 'charging';
 jsonstruct.Control.CRate = 0.05;
 jsonstruct.Control.DRate = 0.05;
 jsonstruct.Control.lowerCutoffVoltage = 2.5;
 jsonstruct.Control.upperCutoffVoltage = 3.47;
+jsonstruct.Control.dIdtLimit = 2e-6;
+jsonstruct.Control.dEdtLimit = 2e-6;
 jsonstruct.Control.numberOfCycles = 1;
+jsonstruct.SOC = 0.01;
+
+% Overwrite parameter values
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.04;
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.8;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.86;
@@ -21,18 +24,6 @@ jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-11;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 9e-13;
 
-% jsonstruct.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 2e-15;
-% jsonstruct.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 8e-16;
-% 
-% jsonstruct.NegativeElectrode.Coating.ActiveMaterial.electronicConductivity = 100;
-% jsonstruct.PositiveElectrode.Coating.ActiveMaterial.electronicConductivity = 100;
-% 
-% jsonstruct.NegativeElectrode.Coating.bruggemanCoefficient = 1;
-% jsonstruct.PositiveElectrode.Coating.bruggemanCoefficient = 1;
-
-
-% Start with charging and simulate the full curve
-jsonstruct.Control.initialControl = 'charging';
 
 % Run simulation and store results
 output = runBatteryJson(jsonstruct);
@@ -141,21 +132,21 @@ time_discharge_model = time_discharge_model - time_discharge_model(1);
 % Plot model discharge
 plot(time_discharge_model / 3600, voltage_discharge_model, '-', 'LineWidth', 2, 'Color', 'r', 'DisplayName', 'Model Discharge');
 
-% Load experimental data (already loaded earlier)
+% Load experimental data
 exp_voltage_charge = experimental_data_fullcell.VoltageCby20_charge;
 exp_time_charge = experimental_data_fullcell.TimeCby20_charge;
 exp_voltage_discharge = experimental_data_fullcell.VoltageCby20_discharge;
 exp_time_discharge = experimental_data_fullcell.TimeCby20_discharge;
 
-% Convert experimental time (duration strings) to seconds
+% Convert experimental time to seconds
 exp_time_charge_sec = seconds(duration(exp_time_charge));
 exp_time_discharge_sec = seconds(duration(exp_time_discharge));
 
-% Plot experimental charge
+% Plot experimental charge and discharge
 plot(exp_time_charge_sec / 3600, exp_voltage_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Experimental Charge');
-
-% Plot experimental discharge
 plot(exp_time_discharge_sec / 3600, exp_voltage_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Experimental Discharge');
+
+
 xlabel('Time / h', 'FontSize', 14, 'FontWeight', 'bold');
 ylabel('Voltage / V', 'FontSize', 14, 'FontWeight', 'bold');
 title('Voltage vs Time: Model vs Experimental', 'FontSize', 16);
