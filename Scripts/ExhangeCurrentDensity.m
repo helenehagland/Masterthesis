@@ -9,7 +9,7 @@ jsonstruct.Control.DRate = 0.05;
 jsonstruct.Control.lowerCutoffVoltage = 0.5;
 jsonstruct.Control.upperCutoffVoltage = 4;
 jsonstruct.Control.initialControl = 'charging';
-output = runBatteryJson(jsonstruct);
+% output = runBatteryJson(jsonstruct);
 states = output.states;
 
 % Create a vector of different diffusion coefficients

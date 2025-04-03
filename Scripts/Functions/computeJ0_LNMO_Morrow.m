@@ -1,7 +1,5 @@
 function j0 = computeJ0_LNMO_Morrow(soc)
-    % Display something so we know it runs
-    disp('✅ Using computeJ0_LNMO_Morrow!');
-
-    % Make j0 absurdly small to check effect
-    j0 = 1e-10 * soc .* (1 - soc);
+    k_ref = 1e-8;  % boost for debugging
+    j0 = k_ref .* (1 - (2*soc - 1).^4);
+    j0(j0 < 0) = 0;
 end
