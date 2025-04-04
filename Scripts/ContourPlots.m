@@ -95,60 +95,60 @@ xlabel('Position / m'); ylabel('Potential (V)'); title('Pos. Electrode Pot.');
 
 set(gcf, 'Position', [100, 100, 1200, 600]);
 
-% === Estimate SOC over time ===
-SOC = cellfun(@(s) s.SOC, states);
-[SOC_unique, ia, ~] = unique(SOC, 'stable');
-SOC_unique_diffsafe = SOC_unique + (0:length(SOC_unique)-1)' * 1e-6;
-time_SOC = time(ia);
-
-% Interpolate state data
-c_ne_SOC = interp1(time, c_ne', time_SOC, 'linear')';
-c_pe_SOC = interp1(time, c_pe', time_SOC, 'linear')';
-c_elyte_SOC = interp1(time, c_elyte', time_SOC, 'linear')';
-phi_ne_SOC = interp1(time, phi_ne', time_SOC, 'linear')';
-phi_pe_SOC = interp1(time, phi_pe', time_SOC, 'linear')';
-phi_elyte_SOC = interp1(time, phi_elyte', time_SOC, 'linear')';
-
-%% === Figure 3: SOC vs Position ===
-figure;
-colormap(sky);
-
-subplot(2, 3, 1); contourf(x_ne, SOC_unique_diffsafe, c_ne_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('Position / m'); ylabel('SOC'); title('Neg. Electrode Conc.');
-
-subplot(2, 3, 2); contourf(x_elyte, SOC_unique_diffsafe, c_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('Position / m'); ylabel('SOC'); title('Electrolyte Conc.');
-
-subplot(2, 3, 3); contourf(x_pe, SOC_unique_diffsafe, c_pe_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('Position / m'); ylabel('SOC'); title('Pos. Electrode Conc.');
-
-subplot(2, 3, 4); contourf(x_ne, SOC_unique_diffsafe, phi_ne_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('Position / m'); ylabel('SOC'); title('Neg. Electrode Pot.');
-
-subplot(2, 3, 5); contourf(x_elyte, SOC_unique_diffsafe, phi_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('Position / m'); ylabel('SOC'); title('Electrolyte Pot.');
-
-subplot(2, 3, 6); contourf(x_pe, SOC_unique_diffsafe, phi_pe_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('Position / m'); ylabel('SOC'); title('Pos. Electrode Pot.');
-
-%% === Figure 4: SOC vs Time ===
-figure;
-colormap(sky);
-
-subplot(2, 3, 1); contourf(SOC_unique_diffsafe, time_SOC, c_ne_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('SOC'); ylabel('Time / h'); title('Neg. Electrode Conc.');
-
-subplot(2, 3, 2); contourf(SOC_unique_diffsafe, time_SOC, c_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('SOC'); ylabel('Time / h'); title('Electrolyte Conc.');
-
-subplot(2, 3, 3); contourf(SOC_unique_diffsafe, time_SOC, c_pe_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('SOC'); ylabel('Time / h'); title('Pos. Electrode Conc.');
-
-subplot(2, 3, 4); contourf(SOC_unique_diffsafe, time_SOC, phi_ne_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('SOC'); ylabel('Time / h'); title('Neg. Electrode Pot.');
-
-subplot(2, 3, 5); contourf(SOC_unique_diffsafe, time_SOC, phi_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('SOC'); ylabel('Time / h'); title('Electrolyte Pot.');
-
-subplot(2, 3, 6); contourf(SOC_unique_diffsafe, time_SOC, phi_pe_SOC', 20, 'LineColor', 'none'); colorbar;
-xlabel('SOC'); ylabel('Time / h'); title('Pos. Electrode Pot.');
+% % === Estimate SOC over time ===
+% SOC = cellfun(@(s) s.SOC, states);
+% [SOC_unique, ia, ~] = unique(SOC, 'stable');
+% SOC_unique_diffsafe = SOC_unique + (0:length(SOC_unique)-1)' * 1e-6;
+% time_SOC = time(ia);
+% 
+% % Interpolate state data
+% c_ne_SOC = interp1(time, c_ne', time_SOC, 'linear')';
+% c_pe_SOC = interp1(time, c_pe', time_SOC, 'linear')';
+% c_elyte_SOC = interp1(time, c_elyte', time_SOC, 'linear')';
+% phi_ne_SOC = interp1(time, phi_ne', time_SOC, 'linear')';
+% phi_pe_SOC = interp1(time, phi_pe', time_SOC, 'linear')';
+% phi_elyte_SOC = interp1(time, phi_elyte', time_SOC, 'linear')';
+% 
+% %% === Figure 3: SOC vs Position ===
+% figure;
+% colormap(sky);
+% 
+% subplot(2, 3, 1); contourf(x_ne, SOC_unique_diffsafe, c_ne_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('Position / m'); ylabel('SOC'); title('Neg. Electrode Conc.');
+% 
+% subplot(2, 3, 2); contourf(x_elyte, SOC_unique_diffsafe, c_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('Position / m'); ylabel('SOC'); title('Electrolyte Conc.');
+% 
+% subplot(2, 3, 3); contourf(x_pe, SOC_unique_diffsafe, c_pe_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('Position / m'); ylabel('SOC'); title('Pos. Electrode Conc.');
+% 
+% subplot(2, 3, 4); contourf(x_ne, SOC_unique_diffsafe, phi_ne_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('Position / m'); ylabel('SOC'); title('Neg. Electrode Pot.');
+% 
+% subplot(2, 3, 5); contourf(x_elyte, SOC_unique_diffsafe, phi_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('Position / m'); ylabel('SOC'); title('Electrolyte Pot.');
+% 
+% subplot(2, 3, 6); contourf(x_pe, SOC_unique_diffsafe, phi_pe_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('Position / m'); ylabel('SOC'); title('Pos. Electrode Pot.');
+% 
+% %% === Figure 4: SOC vs Time ===
+% figure;
+% colormap(sky);
+% 
+% subplot(2, 3, 1); contourf(SOC_unique_diffsafe, time_SOC, c_ne_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('SOC'); ylabel('Time / h'); title('Neg. Electrode Conc.');
+% 
+% subplot(2, 3, 2); contourf(SOC_unique_diffsafe, time_SOC, c_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('SOC'); ylabel('Time / h'); title('Electrolyte Conc.');
+% 
+% subplot(2, 3, 3); contourf(SOC_unique_diffsafe, time_SOC, c_pe_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('SOC'); ylabel('Time / h'); title('Pos. Electrode Conc.');
+% 
+% subplot(2, 3, 4); contourf(SOC_unique_diffsafe, time_SOC, phi_ne_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('SOC'); ylabel('Time / h'); title('Neg. Electrode Pot.');
+% 
+% subplot(2, 3, 5); contourf(SOC_unique_diffsafe, time_SOC, phi_elyte_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('SOC'); ylabel('Time / h'); title('Electrolyte Pot.');
+% 
+% subplot(2, 3, 6); contourf(SOC_unique_diffsafe, time_SOC, phi_pe_SOC', 20, 'LineColor', 'none'); colorbar;
+% xlabel('SOC'); ylabel('Time / h'); title('Pos. Electrode Pot.');
