@@ -179,7 +179,7 @@
     },
     "diffusionCoefficient": {
       "type": "function",
-      "functionname": "computeDiffusionCoefficient_default",
+      "functionname": "computeDiffusionCoefficient_new",
       "argumentlist": [
         "concentration",
         "temperature"
@@ -197,8 +197,8 @@
 "externalTemperature": 298.15
 },
 "TimeStepping": {
-"totalTime": 144000,
-"numberOfTimeSteps": 14400,
+"totalTime": 150000,
+"numberOfTimeSteps": 400,
 "useRampup": true
 },
 "Output": {
