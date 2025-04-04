@@ -12,9 +12,12 @@ jsonstruct.Control.numberOfCycles = 1;
 jsonstruct.SOC = 0.01;
 
 jsonstruct.TimeStepping.totalTime = 72000;
-jsonstruct.TimeStepping.numberOfTimeSteps = 144000;
+jsonstruct.TimeStepping.numberOfTimeSteps = 400;
 
 % Electrode properties
+
+jsonstruct.NegativeElectrode.Coating.thickness = jsonstruct.NegativeElectrode.Coating.thickness .* 0.94;
+jsonstruct.PositiveElectrode.Coating.thickness = jsonstruct.PositiveElectrode.Coating.thickness .* 0.94;
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.04;
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.8;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.86;

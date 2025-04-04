@@ -1,155 +1,121 @@
-% **Plotting Options** 
-plotCharge = true;    % Set to true if you want to plot charging
-plotDischarge = true;  % Set to true if you want to plot discharging
-
-% Load input configuration
+% === Load Input Configuration ===
 jsonstruct = parseBattmoJson('/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
 
 jsonstruct.Control.initialControl = 'charging';
 jsonstruct.Control.CRate = 0.05;
 jsonstruct.Control.DRate = 0.05;
 jsonstruct.Control.lowerCutoffVoltage = 2.5;
-jsonstruct.Control.upperCutoffVoltage = 3.47;
-jsonstruct.Control.dIdtLimit = 2e-6;
-jsonstruct.Control.dEdtLimit = 2e-6;
+jsonstruct.Control.upperCutoffVoltage = 3.5;
+jsonstruct.Control.dIdtLimit = 5e-7;
+jsonstruct.Control.dEdtLimit = 1e-5;
 jsonstruct.Control.numberOfCycles = 1;
 jsonstruct.SOC = 0.01;
 
+% jsonstruct.TimeStepping.totalTime = 750000;
+jsonstruct.TimeStepping.numberOfTimeSteps = 400;
+
+
 % Overwrite parameter values
-jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.04;
+jsonstruct.NegativeElectrode.Coating.thickness = jsonstruct.NegativeElectrode.Coating.thickness .* 0.94;
+jsonstruct.PositiveElectrode.Coating.thickness = jsonstruct.PositiveElectrode.Coating.thickness .* 0.94;
+
+jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.01;
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.8;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.86;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.015;
 
-jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-11;
-jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 9e-13;
+jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-10;
+jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-12;
 
+jsonstruct.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-13;
+jsonstruct.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-14;
 
-% Run simulation and store results
+% === Run Simulation ===
 output = runBatteryJson(jsonstruct);
 states = output.states;
 
-% Extract model data: time, voltage, and current
+% === Extract Model Data ===
 time = cellfun(@(state) state.time, states);
 voltage = cellfun(@(state) state.Control.E, states);
 current = cellfun(@(state) state.Control.I, states);
 
-% Split into Charging and Discharging Phases
-charge_idx = current < 0;  % Negative current = charging
-discharge_idx = current > 0;  % Positive current = discharging
+charge_idx = current < 0;
+discharge_idx = current > 0;
 
-% Prepare for plotting
-charge_end_idxs = find(diff([charge_idx; 0]) == -1); 
+charge_end_idxs = find(diff([charge_idx; 0]) == -1);
+discharge_starts = find(diff([0; discharge_idx]) == 1);
+discharge_ends = find(diff([discharge_idx; 0]) == -1);
 num_cycles = min(jsonstruct.Control.numberOfCycles, 5);
 
-%% ===== FIGURE 1: Voltage vs. Capacity =====
-figure;
-hold on;
+%% === FIGURE 1: Voltage vs Capacity ===
+figure; hold on;
 
-for cycle = 1:num_cycles
-    % Charging
-    if length(find(diff([0; charge_idx]) == 1)) >= cycle && length(charge_end_idxs) >= cycle
-        charge_start = find(diff([0; charge_idx]) == 1, cycle, 'first');
-        charge_end = charge_end_idxs(cycle);
-        valid_charge_range = charge_start:charge_end;
-        time_charge = time(valid_charge_range) - time(valid_charge_range(1));
-        voltage_charge = voltage(valid_charge_range);
-        current_charge = current(valid_charge_range);
-        dt_charge = diff([0; time_charge]);
-        capacity_charge = cumsum(abs(current_charge) .* dt_charge) / 3.6;
-        capacity_charge = capacity_charge - min(capacity_charge); 
-        plot(capacity_charge, voltage_charge, '-', 'LineWidth', 2, 'DisplayName', ['Model Charging Cycle ' num2str(cycle)]);
-    end
+% Charging
+charge_start = find(diff([0; charge_idx]) == 1, 1, 'first');
+charge_end = find(diff([charge_idx; 0]) == -1, 1, 'first');
 
-    % Discharging
-    discharge_starts = find(diff([0; discharge_idx]) == 1);
-    discharge_ends = find(diff([discharge_idx; 0]) == -1);
-    if length(discharge_starts) >= cycle && length(discharge_ends) >= cycle
-        discharge_start = discharge_starts(cycle);
-        discharge_end = discharge_ends(cycle);
-        if cycle <= length(charge_end_idxs)
-            charge_end_voltage = voltage(charge_end_idxs(cycle));
-            voltage(discharge_start) = charge_end_voltage;
-        end
-        valid_discharge_range = discharge_start:discharge_end;
-        time_discharge = time(valid_discharge_range) - time(valid_discharge_range(1));
-        voltage_discharge = voltage(valid_discharge_range);
-        current_discharge = current(valid_discharge_range);
-        dt_discharge = diff([0; time_discharge]);
-        capacity_discharge = cumsum(current_discharge .* dt_discharge) / 3.6;
-        capacity_discharge = capacity_discharge - min(capacity_discharge);
-        plot(capacity_discharge, voltage_discharge, '-', 'LineWidth', 2, 'DisplayName', ['Model Discharging Cycle ' num2str(cycle)]);
-    end
+if ~isempty(charge_start) && ~isempty(charge_end)
+    idx = charge_start:charge_end;
+    t_c = time(idx) - time(idx(1));
+    v_c = voltage(idx);
+    i_c = current(idx);
+    cap_c = cumsum(abs(i_c) .* diff([0; t_c])) / 3.6;
+    cap_c = cap_c - min(cap_c);
+    plot(cap_c, v_c, '-', 'LineWidth', 2, 'DisplayName', 'Model Charging');
 end
 
-% Load experimental data
-file_path_fullcell = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
-experimental_data_fullcell = readtable(file_path_fullcell);
-exp_voltage_charge = experimental_data_fullcell.VoltageCby20_charge;
-exp_capacity_charge = experimental_data_fullcell.CapacityCby20_charge;
-exp_voltage_discharge = experimental_data_fullcell.VoltageCby20_discharge;
-exp_capacity_discharge = experimental_data_fullcell.CapacityCby20_discharge;
+% Discharging
+discharge_start = find(diff([0; discharge_idx]) == 1, 1, 'first');
+discharge_end = find(diff([discharge_idx; 0]) == -1, 1, 'first');
 
-plot(exp_capacity_charge, exp_voltage_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Experimental (Charge)');
-plot(exp_capacity_discharge, exp_voltage_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Experimental (Discharge)');
+if ~isempty(discharge_start) && ~isempty(discharge_end)
+    idx = discharge_start:discharge_end;
+    t_d = time(idx) - time(idx(1));
+    v_d = voltage(idx);
+    i_d = current(idx);
+    cap_d = cumsum(i_d .* diff([0; t_d])) / 3.6;
+    cap_d = cap_d - min(cap_d);
+    plot(cap_d, v_d, '-', 'LineWidth', 2, 'DisplayName', 'Model Discharging');
+end
 
-xlabel('Capacity / mA \cdot h', 'FontSize', 14, 'FontWeight', 'bold');
+% Experimental data
+exp_data_path = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
+exp_data = readtable(exp_data_path);
+plot(exp_data.CapacityCby20_charge, exp_data.VoltageCby20_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Experimental (Charge)');
+plot(exp_data.CapacityCby20_discharge, exp_data.VoltageCby20_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Experimental (Discharge)');
+
+xlabel('Capacity / mA·h', 'FontSize', 14, 'FontWeight', 'bold');
 ylabel('Voltage / V', 'FontSize', 14, 'FontWeight', 'bold');
 title('Voltage vs Capacity: Model vs Experimental', 'FontSize', 16);
 legend('Location', 'best', 'FontSize', 12);
-grid on;
-hold off;
+grid on; hold off;
 
-%% ===== FIGURE 2: Voltage vs. Time =====
-figure;
-hold on;
+%% === FIGURE 2: Voltage vs Time ===
+figure; hold on;
 
-% Extract time series for model charge
-time_charge_model = time(charge_idx);
-voltage_charge_model = voltage(charge_idx);
-
-% Normalize model charge time to start from zero
-time_charge_model = time_charge_model - time_charge_model(1);
-
-% === Trim the CV phase for the plot (optional) ===
-cv_cutoff_index = find(voltage_charge_model >= 3.47, 1, 'first');
-if ~isempty(cv_cutoff_index)
-    time_charge_model = time_charge_model(1:cv_cutoff_index);
-    voltage_charge_model = voltage_charge_model(1:cv_cutoff_index);
+% Charge
+t_charge = time(charge_idx) - time(find(charge_idx, 1, 'first'));
+v_charge = voltage(charge_idx);
+cv_limit = find(v_charge >= 3.47, 1);
+if ~isempty(cv_limit)
+    t_charge = t_charge(1:cv_limit);
+    v_charge = v_charge(1:cv_limit);
 end
-% ================================================
+plot(t_charge / 3600, v_charge, '-', 'LineWidth', 2, 'Color', 'b', 'DisplayName', 'Model Charge');
 
-% Plot model charge
-plot(time_charge_model / 3600, voltage_charge_model, '-', 'LineWidth', 2, 'Color', 'b', 'DisplayName', 'Model Charge');
+% Discharge
+t_discharge = time(discharge_idx) - time(find(discharge_idx, 1, 'first'));
+v_discharge = voltage(discharge_idx);
+plot(t_discharge / 3600, v_discharge, '-', 'LineWidth', 2, 'Color', 'r', 'DisplayName', 'Model Discharge');
 
-% Extract time series for model discharge
-time_discharge_model = time(discharge_idx);
-voltage_discharge_model = voltage(discharge_idx);
-
-% Normalize model discharge time to start from zero
-time_discharge_model = time_discharge_model - time_discharge_model(1);
-
-% Plot model discharge
-plot(time_discharge_model / 3600, voltage_discharge_model, '-', 'LineWidth', 2, 'Color', 'r', 'DisplayName', 'Model Discharge');
-
-% Load experimental data
-exp_voltage_charge = experimental_data_fullcell.VoltageCby20_charge;
-exp_time_charge = experimental_data_fullcell.TimeCby20_charge;
-exp_voltage_discharge = experimental_data_fullcell.VoltageCby20_discharge;
-exp_time_discharge = experimental_data_fullcell.TimeCby20_discharge;
-
-% Convert experimental time to seconds
-exp_time_charge_sec = seconds(duration(exp_time_charge));
-exp_time_discharge_sec = seconds(duration(exp_time_discharge));
-
-% Plot experimental charge and discharge
-plot(exp_time_charge_sec / 3600, exp_voltage_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Experimental Charge');
-plot(exp_time_discharge_sec / 3600, exp_voltage_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Experimental Discharge');
-
+% Experimental Time Series
+t_charge_exp = seconds(duration(exp_data.TimeCby20_charge));
+t_discharge_exp = seconds(duration(exp_data.TimeCby20_discharge));
+plot(t_charge_exp / 3600, exp_data.VoltageCby20_charge, '--', 'LineWidth', 2, 'Color', [0.301 0.745 0.933], 'DisplayName', 'Experimental Charge');
+plot(t_discharge_exp / 3600, exp_data.VoltageCby20_discharge, '--', 'LineWidth', 2, 'Color', [0.929 0.694 0.125], 'DisplayName', 'Experimental Discharge');
 
 xlabel('Time / h', 'FontSize', 14, 'FontWeight', 'bold');
 ylabel('Voltage / V', 'FontSize', 14, 'FontWeight', 'bold');
 title('Voltage vs Time: Model vs Experimental', 'FontSize', 16);
 legend('Location', 'best', 'FontSize', 12);
-grid on;
-hold off;
+grid on; hold off;
