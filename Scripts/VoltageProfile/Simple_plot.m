@@ -19,13 +19,13 @@ jsonstruct.TimeStepping.numberOfTimeSteps = 400;
 jsonstruct.NegativeElectrode.Coating.thickness = jsonstruct.NegativeElectrode.Coating.thickness .* 0.94;
 jsonstruct.PositiveElectrode.Coating.thickness = jsonstruct.PositiveElectrode.Coating.thickness .* 0.94;
 
-jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.04;
+jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.01;
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.8;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.86;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.015;
 
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-10;
-jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-12;
+jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 2.5e-12;
 
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-13;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-14;
