@@ -24,7 +24,7 @@ jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.86;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.015;
 
-jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-10;
+jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 2e-10;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 2.5e-12;
 
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-13;
