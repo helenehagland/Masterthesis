@@ -1,0 +1,142 @@
+% === Optimize Electrode Thickness Script ===
+clear; close all; clc;
+
+%% === Load Experimental Data ===
+exp_data_path = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
+exp_data = readtable(exp_data_path);
+capacity_exp = exp_data.CapacityCby20_discharge;
+voltage_exp = exp_data.VoltageCby20_discharge;
+valid_idx = ~isnan(capacity_exp) & ~isnan(voltage_exp);
+capacity_exp = capacity_exp(valid_idx);
+voltage_exp = voltage_exp(valid_idx);
+cap_common = linspace(min(capacity_exp), max(capacity_exp), 500);
+voltage_exp_interp = interp1(capacity_exp, voltage_exp, cap_common, 'linear', 'extrap');
+
+%% === Original Thickness Values ===
+base_thickness_neg = 7.328e-5;
+base_thickness_pos = 6.206e-5;
+
+%% === Objective Function for Optimization ===
+global step_log
+step_log = [];
+
+objectiveFun = @(x) run_and_compute_rmse(x(1), x(2), cap_common, voltage_exp_interp, base_thickness_neg, base_thickness_pos);
+
+%% === Initial Guess and Bounds ===
+initial_guess = [1.0, 1.0];  % Scaling factors for [negative, positive]
+lb = [0.95, 0.95];
+ub = [1.05, 1.05];
+
+%% === Optimization (fminsearch with bounds manually handled) ===
+opts = optimset('Display', 'iter', 'TolX', 1e-4, 'MaxIter', 10, 'MaxFunEvals', 20);
+[x_opt, fval] = fminsearch(@(x) bound_wrapper(x, lb, ub, objectiveFun), initial_guess, opts);
+
+%% === Final Plot ===
+final_thick_neg = x_opt(1) * base_thickness_neg;
+final_thick_pos = x_opt(2) * base_thickness_pos;
+
+rmse_final = run_and_compute_rmse(x_opt(1), x_opt(2), cap_common, voltage_exp_interp, base_thickness_neg, base_thickness_pos);
+
+fprintf('\n=== Optimization Result ===\n');
+fprintf('Optimal Scaling: neg = %.4f, pos = %.4f\n', x_opt(1), x_opt(2));
+fprintf('Optimal Thicknesses: neg = %.5e, pos = %.5e\n', final_thick_neg, final_thick_pos);
+fprintf('Final RMSE: %.6f\n', rmse_final);
+
+%% === Optimization Path Plot ===
+if isempty(step_log)
+    warning('No valid steps to plot.');
+else
+    figure; hold on;
+    contourf(0.9:0.01:1.1, 0.9:0.01:1.1, zeros(21));  % Dummy background
+    plot(step_log(:,1), step_log(:,2), 'w.-', 'LineWidth', 1.5, 'MarkerSize', 12);
+    plot(step_log(1,1), step_log(1,2), 'ro', 'MarkerSize', 10, 'DisplayName', 'Start');
+    plot(step_log(end,1), step_log(end,2), 'go', 'MarkerSize', 10, 'DisplayName', 'End');
+    xlabel('Negative Scaling'); ylabel('Positive Scaling');
+    title('Optimization Path'); legend; grid on; hold off;
+end
+
+%% === Supporting Functions ===
+function rmse = run_and_compute_rmse(s_neg, s_pos, cap_common, voltage_exp_interp, base_neg, base_pos)
+    global step_log
+    rmse = Inf;
+    try
+        json = parseBattmoJson('/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/Matlab/Parameter_Files/Morrow_input.json');
+
+        % === Thickness Scaling ===
+        json.NegativeElectrode.Coating.thickness = s_neg * base_neg;
+        json.PositiveElectrode.Coating.thickness = s_pos * base_pos;
+
+        % === Reaction & Diffusion Parameters ===
+        json.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-10;
+        json.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1e-12;
+
+        json.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-13;
+        json.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-14;
+
+        % === Control settings with 0.05C ===
+        json.Control.initialControl = 'charging';
+        json.Control.CRate = 0.05;
+        json.Control.DRate = 0.05;
+        json.Control.lowerCutoffVoltage = 2.5;
+        json.Control.upperCutoffVoltage = 3.5;
+        json.Control.dIdtLimit = 1e-6;
+        json.Control.dEdtLimit = 1e-5;
+        json.Control.numberOfCycles = 1;
+
+        % === Safer numerical settings ===
+        json.TimeStepping.numberOfTimeSteps = 400;
+        json.TimeStepping.initialTimeStep = 1.0;
+        json.TimeStepping.minimumTimeStep = 1e-3;
+        json.TimeStepping.maximumTimeStep = 10.0;
+        json.Solver.maxStepCutbacks = 10;
+
+        json.SOC = 0.01; % Start at 1% SOC
+
+        output = runBatteryJson(json);
+        states = output.states;
+        time = cellfun(@(s) s.time, states);
+        voltage = cellfun(@(s) s.Control.E, states);
+        current = cellfun(@(s) s.Control.I, states);
+
+        idx = current > 0;
+        discharge_start = find(diff([0; idx]) == 1, 1);
+        discharge_end = find(diff([idx; 0]) == -1, 1);
+
+        if isempty(discharge_start) || isempty(discharge_end) || discharge_end <= discharge_start
+            warning('Invalid discharge indices — skipping step.');
+            return;
+        end
+
+        t = time(discharge_start:discharge_end) - time(discharge_start);
+        v = voltage(discharge_start:discharge_end);
+        i = current(discharge_start:discharge_end);
+        cap = cumsum(i .* diff([0; t])) / 3.6;
+        cap = cap - min(cap);
+
+        if length(cap) < 2 || any(isnan(cap)) || any(isnan(v))
+            warning('Too little or invalid data in capacity — skipping step.');
+            return;
+        end
+
+        v_interp = interp1(cap, v, cap_common, 'linear', 'extrap');
+        rmse = sqrt(mean((voltage_exp_interp - v_interp).^2));
+
+        if isfinite(rmse)
+            step_log(end+1,:) = [s_neg, s_pos, rmse];
+        end
+
+    catch ME
+        warning('Simulation crashed: %s', ME.message);
+        rmse = Inf;
+    end
+end
+
+function f = bound_wrapper(x, lb, ub, fun)
+    x_clipped = max(min(x, ub), lb);
+    f = fun(x_clipped);
+end
+
+
+% === TEST: Kjør modellen manuelt én gang uten optimalisering ===
+[rmse_test, output] = run_and_compute_rmse(1.0, 1.0, cap_common, voltage_exp_interp, base_thickness_neg, base_thickness_pos);
+fprintf('Manual test RMSE (should NOT be Inf): %.6f\n', rmse_test);

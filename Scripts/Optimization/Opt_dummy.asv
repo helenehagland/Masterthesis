@@ -1,0 +1,100 @@
+% Opt_dummy.m
+clear; close all; clc;
+
+%% === Load Experimental Data ===
+exp_data_path = '/Users/helenehagland/Documents/NTNU/Prosjekt og master/Prosjektoppgave/ProjectThesis/Dataset/Nye_dataset/FullCell_Voltage_Capacity.xlsx';
+exp_data = readtable(exp_data_path);
+
+capacity_exp = exp_data.CapacityCby20_discharge;
+voltage_exp = exp_data.VoltageCby20_discharge;
+
+valid_idx = ~isnan(capacity_exp) & ~isnan(voltage_exp);
+capacity_exp = capacity_exp(valid_idx);
+voltage_exp = voltage_exp(valid_idx);
+
+cap_common = linspace(min(capacity_exp), max(capacity_exp), 500);
+voltage_exp_interp = interp1(capacity_exp, voltage_exp, cap_common, 'linear', 'extrap');
+
+%% === Define Dummy Model ===
+a = 3.6; b = 0.5;
+dummy_voltage = a - log(1 + b * cap_common);
+rmse = sqrt(mean((voltage_exp_interp - dummy_voltage).^2));
+
+%% === Figure 1: Initial Fit ===
+figure; hold on;
+plot(capacity_exp, voltage_exp, '--', 'LineWidth', 2, 'DisplayName', 'Experimental');
+plot(cap_common, dummy_voltage, '-', 'LineWidth', 2, 'DisplayName', 'Dummy Model');
+xlabel('Capacity / mA·h'); ylabel('Voltage / V');
+title(sprintf('Figure 1: Initial Fit (RMSE = %.3f V)', rmse), 'FontWeight', 'bold');
+legend('Location', 'best'); grid on;
+
+%% === Brute Force Cost Landscape ===
+a_vals = linspace(3, 4, 50);
+b_vals = linspace(0.1, 1.0, 50);
+RMSE_map = zeros(length(a_vals), length(b_vals));
+
+for i = 1:length(a_vals)
+    for j = 1:length(b_vals)
+        model_v = a_vals(i) - log(1 + b_vals(j) * cap_common);
+        RMSE_map(i, j) = sqrt(mean((voltage_exp_interp - model_v).^2));
+    end
+end
+
+%% === Figure 2: Cost Landscape (No Steps) ===
+figure;
+contourf(b_vals, a_vals, RMSE_map, 30); colorbar;
+xlabel('Parameter b'); ylabel('Parameter a');
+title('Figure 2: Brute Force Cost Landscape (RMSE)');
+
+%% === Optimization Using fminsearch ===
+step_history = [];  % Initialize step history
+objectiveFun = @(params) trackRMSE(params, cap_common, voltage_exp_interp);
+
+initial_guess = [3.5, 0.4];
+[opt_params, fval] = fminsearch(objectiveFun, initial_guess);
+
+% === Print Summary ===
+fprintf('\n=== Optimization Summary ===\n');
+fprintf('Number of steps: %d\n', size(step_history, 1));
+for k = 1:size(step_history, 1)
+    fprintf('Step %2d: a = %.4f, b = %.4f, RMSE = %.6f\n', ...
+        k, step_history(k,1), step_history(k,2), step_history(k,3));
+end
+fprintf('Final RMSE: %.6f\n', fval);
+
+%% === Figure 3: Optimized Fit ===
+a_opt = opt_params(1);
+b_opt = opt_params(2);
+V_opt = a_opt - log(1 + b_opt * cap_common);
+
+figure; hold on;
+plot(cap_common, voltage_exp_interp, '--', 'LineWidth', 2, 'DisplayName', 'Experimental');
+plot(cap_common, V_opt, '-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Optimized Model (a=%.3f, b=%.3f)', a_opt, b_opt));
+xlabel('Capacity / mA·h'); ylabel('Voltage / V');
+title(sprintf('Figure 3: Optimized Fit (RMSE = %.3f V)', fval), 'FontWeight', 'bold');
+legend('Location', 'best'); grid on;
+
+%% === Figure 4: Cost Landscape With Optimization Steps ===
+figure;
+contourf(b_vals, a_vals, RMSE_map, 30); colorbar;
+xlabel('Parameter b'); ylabel('Parameter a');
+title('Figure 4: Cost Landscape With Optimization Steps');
+hold on;
+plot(step_history(:,2), step_history(:,1), 'w.-', 'LineWidth', 1.5, 'DisplayName', 'Optimization Path');
+plot(step_history(1,2), step_history(1,1), 'ro', 'MarkerSize', 8, 'DisplayName', 'Start');
+plot(step_history(end,2), step_history(end,1), 'go', 'MarkerSize', 8, 'DisplayName', 'End');
+legend('Location', 'northwest'); grid on; hold off;
+
+%% === Nested RMSE Tracker Function ===
+function rmse = trackRMSE(params, cap_common, voltage_exp_interp)
+    a = params(1); b = params(2);
+    v_model = a - log(1 + b * cap_common);
+    rmse = sqrt(mean((voltage_exp_interp - v_model).^2));
+    persistent history
+    if isempty(history)
+        history = [];
+    end
+    history(end+1, :) = [a, b, rmse];
+    assignin('base', 'step_history', history);
+end
