@@ -11,21 +11,26 @@ jsonstruct.Control.dEdtLimit = 1e-5;
 jsonstruct.Control.numberOfCycles = 1;
 jsonstruct.SOC = 0.01;
 
-% jsonstruct.TimeStepping.totalTime = 750000;
+% jsonstruct.TimeStepping.totalTime = 200000;
 jsonstruct.TimeStepping.numberOfTimeSteps = 400;
 
 
 % Overwrite parameter values
 jsonstruct.NegativeElectrode.Coating.thickness = jsonstruct.NegativeElectrode.Coating.thickness .* 0.94;
-jsonstruct.PositiveElectrode.Coating.thickness = jsonstruct.PositiveElectrode.Coating.thickness .* 0.94;
+% jsonstruct.PositiveElectrode.Coating.thickness = jsonstruct.PositiveElectrode.Coating.thickness .* 0.94;
+
+%jsonstruct.NegativeElectrode.Coating.thickness = 9.9896e-05;
+jsonstruct.PositiveElectrode.Coating.thickness = 5.8626e-05;
+
 
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.01;
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.8;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.86;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry100 = 0.015;
 
-jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 2e-10;
+jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 1.5e-10;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.Interface.reactionRateConstant = 2.5e-12;
+
 
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-13;
 jsonstruct.PositiveElectrode.Coating.ActiveMaterial.SolidDiffusion.referenceDiffusionCoefficient = 1e-14;
