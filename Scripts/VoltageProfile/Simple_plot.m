@@ -16,11 +16,11 @@ jsonstruct.TimeStepping.numberOfTimeSteps = 400;
 
 
 % Overwrite parameter values
-jsonstruct.NegativeElectrode.Coating.thickness = jsonstruct.NegativeElectrode.Coating.thickness .* 0.94;
+% jsonstruct.NegativeElectrode.Coating.thickness = jsonstruct.NegativeElectrode.Coating.thickness .* 0.94;
 % jsonstruct.PositiveElectrode.Coating.thickness = jsonstruct.PositiveElectrode.Coating.thickness .* 0.94;
 
-%jsonstruct.NegativeElectrode.Coating.thickness = 9.9896e-05;
-jsonstruct.PositiveElectrode.Coating.thickness = 5.8626e-05;
+jsonstruct.NegativeElectrode.Coating.thickness = 6.888320e-05; %Optimized parameter
+jsonstruct.PositiveElectrode.Coating.thickness = 5.8626e-5; %Optimized parameter
 
 
 jsonstruct.NegativeElectrode.Coating.ActiveMaterial.Interface.guestStoichiometry0 = 0.01;
